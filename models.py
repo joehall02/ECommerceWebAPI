@@ -18,6 +18,10 @@ class User(db.Model):
 
     def __repr__(self):
         return f'<User {self.id} {self.first_name}>'
+    
+    def save(self):
+        db.session.add(self)
+        db.session.commit()
 
 class Address(db.Model):
     __tablename__ = 'Address'
@@ -78,7 +82,7 @@ class Product(db.Model):
         return f'<Product {self.id} {self.name}>'
 
 class Cart(db.Model):
-    __tablename__ = 'carts'
+    __tablename__ = 'Cart'
     id = db.Column(db.Integer, primary_key=True)
 
     # Foreign key
