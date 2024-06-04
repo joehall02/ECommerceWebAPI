@@ -3,12 +3,18 @@ from exts import db
 class User(db.Model):
     __tablename__ = 'User'
     id = db.Column(db.Integer, primary_key=True)
-    first_name = db.Column(db.String(100), nullable=True)
-    last_name = db.Column(db.String(100), nullable=True)
-    email = db.Column(db.String(100), nullable=True, unique=True) # unique=True ensures that no two users can have the same email
-    password = db.Column(db.String(100), nullable=True)
-    phone_number = db.Column(db.String(100), nullable=True)
+    first_name = db.Column(db.String(100), nullable=False)
+    last_name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(100), nullable=False, unique=True) # unique=True ensures that no two users can have the same email
+    password = db.Column(db.String(100), nullable=False)
+    phone_number = db.Column(db.String(100), nullable=True) # nullable=True allows for the phone number to be empty
     role = db.Column(db.String(50), nullable=False)
+
+    # Relationships
+    addresses = db.relationship('Address', backref='user', lazy=True) 
+    payments = db.relationship('Payment', backref='user', lazy=True)
+    carts = db.relationship('Cart', backref='user', lazy=True)
+    orders = db.relationship('Order', backref='user', lazy=True)
 
     def __repr__(self):
         return f'<User {self.id} {self.first_name}>'
@@ -46,6 +52,9 @@ class Category(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
 
+    # Relationships
+    products = db.relationship('Product', backref='category', lazy=True)
+
     def __repr__(self):
         return f'<Category {self.id} {self.name}>'
 
@@ -60,6 +69,11 @@ class Product(db.Model):
     # Foreign key
     category_id = db.Column(db.Integer, db.ForeignKey('Category.id'), nullable=False)
 
+    # Relationships
+    product_images = db.relationship('ProductImage', backref='product', lazy=True)
+    featured_products = db.relationship('FeaturedProduct', backref='product', lazy=True, uselist=False)
+    cart_products = db.relationship('CartProduct', backref='product', lazy=True)
+
     def __repr__(self):
         return f'<Product {self.id} {self.name}>'
 
@@ -69,6 +83,9 @@ class Cart(db.Model):
 
     # Foreign key
     user_id = db.Column(db.Integer, db.ForeignKey('User.id'), nullable=False)
+
+    # Relationships
+    cart_products = db.relationship('CartProduct', backref='cart', lazy=True)
 
     def __repr__(self):
         return f'<Cart {self.id}>'
@@ -102,7 +119,7 @@ class FeaturedProduct(db.Model):
     id = db.Column(db.Integer, primary_key=True)
 
     # Foreign key
-    product_id = db.Column(db.Integer, db.ForeignKey('Product.id'), nullable=False)
+    product_id = db.Column(db.Integer, db.ForeignKey('Product.id'), unique=True, nullable=False) 
 
     def __repr__(self):
         return f'<FeaturedProduct {self.id}>'
@@ -119,6 +136,11 @@ class Order(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('User.id'), nullable=False)
     address_id = db.Column(db.Integer, db.ForeignKey('Address.id'), nullable=False)
     payment_id = db.Column(db.Integer, db.ForeignKey('Payment.id'), nullable=False)
+
+    # Relationships
+    order_items = db.relationship('OrderItem', backref='order', lazy=True)
+    address = db.relationship('Address', backref='order', lazy=True)
+    payment = db.relationship('Payment', backref='order', lazy=True)
 
     def __repr__(self):
         return f'<Order {self.id} {self.total_price}>'
