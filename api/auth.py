@@ -1,19 +1,20 @@
 from models import User
 from flask import Flask, request
 from flask_restx import Namespace, Resource, fields
-from marshmallow import Schema, fields, ValidationError
+from marshmallow import Schema, fields as ma_fields, ValidationError
+from werkzeug.security import generate_password_hash, check_password_hash
 
 # Define the schema for the signup and login operations used to validate the request data
 class SignupSchema(Schema):
-    first_name = fields.Str(required=True)
-    last_name = fields.Str(required=True)
-    email = fields.Email(required=True)
-    password = fields.Str(required=True)
-    phone_number = fields.Str(required=False)
+    first_name = ma_fields.String(required=True)
+    last_name = ma_fields.String(required=True)
+    email = ma_fields.Email(required=True)
+    password = ma_fields.String(required=True)
+    phone_number = ma_fields.String(required=False)
 
 class LoginSchema(Schema):
-    username = fields.Str(required=True)
-    password = fields.Str(required=True)
+    email = ma_fields.Email(required=True)
+    password = ma_fields.String(required=True)
 
 # Define the schema instances
 signup_schema = SignupSchema()
@@ -31,7 +32,7 @@ class UserService:
         new_user = User(
             first_name=data['first_name'],
             last_name=data['last_name'],
-            password=data['password'],
+            password=generate_password_hash(data['password']), # Generate a password hash before storing it
             email=data['email'],
             phone_number=data['phone_number'],
             role='customer'
@@ -39,9 +40,14 @@ class UserService:
         new_user.save()
         return new_user
     
-    def login(data):
-        pass
-    
+    @staticmethod
+    def login_user(data):
+        user = User.query.filter_by(email=data['email']).first()
+        if not user or not check_password_hash(user.password, data['password']): # Check if the user exists and the password is correct
+            raise ValidationError('Invalid email or password')
+        
+        return user
+        
 
 auth_ns = Namespace('auth', description='Authentication operations')
 
@@ -56,7 +62,7 @@ signup_model = auth_ns.model('Signup', {
 })
 
 login_model = auth_ns.model('Login', {
-    'username': fields.String(),
+    'email': fields.String(),
     'password': fields.String()
 })
 
@@ -85,3 +91,17 @@ class Login(Resource):
     @auth_ns.expect(login_model)
     def post(self):
         data = request.get_json()
+
+        # Validate the request data against the login schema
+        try:
+            valid_data = login_schema.load(data)
+        except ValidationError as e:
+            return {'message': str(e)}, 400
+        
+        # Login the user
+        try:
+            UserService.login_user(valid_data)
+        except ValidationError as e:
+            return {'message': str(e)}, 400
+        
+        return {'message': 'Login successful'}, 200
