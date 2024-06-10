@@ -3,6 +3,9 @@ from flask import Flask, request
 from flask_restx import Namespace, Resource, fields
 from marshmallow import Schema, fields as ma_fields, ValidationError
 from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime, timedelta, timezone
+import jwt
+import os
 
 # Define the schema for the signup and login operations used to validate the request data
 class SignupSchema(Schema):
@@ -46,7 +49,15 @@ class UserService:
         if not user or not check_password_hash(user.password, data['password']): # Check if the user exists and the password is correct
             raise ValidationError('Invalid email or password')
         
-        return user
+        token = jwt.encode({
+            'id': user.id,
+            'exp': datetime.now(timezone.utc) + timedelta(hours=1) # Set the token to expire in 1 hour
+        },
+        os.getenv('SECRET_KEY'),
+        'HS256'
+        )
+        
+        return token
         
 
 auth_ns = Namespace('auth', description='Authentication operations')
@@ -100,8 +111,9 @@ class Login(Resource):
         
         # Login the user
         try:
-            UserService.login_user(valid_data)
+            token = UserService.login_user(valid_data)
         except ValidationError as e:
             return {'message': str(e)}, 400
         
-        return {'message': 'Login successful'}, 200
+        return {'token': token}, 200
+    

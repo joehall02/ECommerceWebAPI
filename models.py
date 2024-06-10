@@ -13,7 +13,7 @@ class User(db.Model):
     # Relationships
     addresses = db.relationship('Address', backref='user', lazy=True) 
     payments = db.relationship('Payment', backref='user', lazy=True)
-    carts = db.relationship('Cart', backref='user', lazy=True)
+    carts = db.relationship('Cart', backref='user', lazy=True, uselist=False) # uselist=False ensures that a user can only have one cart
     orders = db.relationship('Order', backref='user', lazy=True)
 
     def __repr__(self):
@@ -21,6 +21,10 @@ class User(db.Model):
     
     def save(self):
         db.session.add(self)
+        db.session.commit()
+
+    def delete(self):
+        db.session.delete(self)
         db.session.commit()
 
 class Address(db.Model):
@@ -36,6 +40,14 @@ class Address(db.Model):
 
     def __repr__(self):
         return f'<Address {self.id} {self.address_line_1}>'
+    
+    def save(self):
+        db.session.add(self)
+        db.session.commit()
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
 
 class Payment(db.Model):
     __tablename__ = 'Payment'
@@ -51,6 +63,14 @@ class Payment(db.Model):
     def __repr__(self):
         return f'<Payment {self.id} {self.name_on_card}>'
     
+    def save(self):
+        db.session.add(self)
+        db.session.commit()
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
+    
 class Category(db.Model):
     __tablename__ = 'Category'
     id = db.Column(db.Integer, primary_key=True)
@@ -61,6 +81,14 @@ class Category(db.Model):
 
     def __repr__(self):
         return f'<Category {self.id} {self.name}>'
+    
+    def save(self):
+        db.session.add(self)
+        db.session.commit()
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
 
 class Product(db.Model):
     __tablename__ = 'Product'
@@ -75,11 +103,19 @@ class Product(db.Model):
 
     # Relationships
     product_images = db.relationship('ProductImage', backref='product', lazy=True)
-    featured_products = db.relationship('FeaturedProduct', backref='product', lazy=True, uselist=False)
+    featured_products = db.relationship('FeaturedProduct', backref='product', lazy=True, uselist=False) # uselist=False ensures that a product can only be featured once
     cart_products = db.relationship('CartProduct', backref='product', lazy=True)
 
     def __repr__(self):
         return f'<Product {self.id} {self.name}>'
+    
+    def save(self):
+        db.session.add(self)
+        db.session.commit()
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
 
 class Cart(db.Model):
     __tablename__ = 'Cart'
@@ -93,6 +129,14 @@ class Cart(db.Model):
 
     def __repr__(self):
         return f'<Cart {self.id}>'
+    
+    def save(self):
+        db.session.add(self)
+        db.session.commit()
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
 
 # Cart and Product have a many-to-many relationship so an association object is required
 class CartProduct(db.Model):
@@ -107,6 +151,14 @@ class CartProduct(db.Model):
     def __repr__(self):
         return f'<CartProduct {self.id} {self.quantity}>'
     
+    def save(self):
+        db.session.add(self)
+        db.session.commit()
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
+    
 class ProductImage(db.Model):
     __tablename__ = 'Product_Image'
     id = db.Column(db.Integer, primary_key=True)
@@ -118,6 +170,14 @@ class ProductImage(db.Model):
     def __repr__(self):
         return f'<ProductImage {self.id} {self.image_path}>'
     
+    def save(self):
+        db.session.add(self)
+        db.session.commit()
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
+    
 class FeaturedProduct(db.Model):
     __tablename__ = 'Featured_Product'
     id = db.Column(db.Integer, primary_key=True)
@@ -128,7 +188,14 @@ class FeaturedProduct(db.Model):
     def __repr__(self):
         return f'<FeaturedProduct {self.id}>'
     
+    def save(self):
+        db.session.add(self)
+        db.session.commit()
 
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
+    
 class Order(db.Model):
     __tablename__ = 'Order'
     id = db.Column(db.Integer, primary_key=True)
@@ -143,11 +210,19 @@ class Order(db.Model):
 
     # Relationships
     order_items = db.relationship('OrderItem', backref='order', lazy=True)
-    address = db.relationship('Address', backref='order', lazy=True)
-    payment = db.relationship('Payment', backref='order', lazy=True)
+    address = db.relationship('Address', backref='order', lazy=True, uselist=False) # uselist=False ensures that an order can only have one address
+    payment = db.relationship('Payment', backref='order', lazy=True, uselist=False) # uselist=False ensures that an order can only have one payment
 
     def __repr__(self):
         return f'<Order {self.id} {self.total_price}>'
+    
+    def save(self):
+        db.session.add(self)
+        db.session.commit()
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
     
 class OrderItem(db.Model):
     __tablename__ = 'Order_Item'
@@ -161,3 +236,11 @@ class OrderItem(db.Model):
 
     def __repr__(self):
         return f'<OrderItem {self.id} {self.quantity} {self.price}>'
+    
+    def save(self):
+        db.session.add(self)
+        db.session.commit()
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
