@@ -1,5 +1,3 @@
-from functools import wraps
-
 from dotenv import load_dotenv
 from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity, jwt_required
 from models import User
@@ -84,7 +82,7 @@ login_model = auth_ns.model('Login', {
 })
 
 @auth_ns.route('/signup', methods=['POST'])
-class Signup(Resource):
+class SignupResource(Resource):
     @auth_ns.expect(signup_model)
     def post(self):
         data = request.get_json()
@@ -94,17 +92,21 @@ class Signup(Resource):
             valid_data = signup_schema.load(data)
         except ValidationError as e: # Return an error response if the request data is invalid
             return {'message': str(e)}, 400
+        except Exception as e:
+            return {'message': str(e)}, 500
 
         # Create a new user account
         try:
             UserService.create_user(valid_data)
         except ValidationError as e:
             return {'message': str(e)}, 400
+        except Exception as e:
+            return {'message': str(e)}, 500
 
         return {'message': 'Account created successfully'}, 201
 
 @auth_ns.route('/login', methods=['POST'])
-class Login(Resource):
+class LoginResource(Resource):
     @auth_ns.expect(login_model)
     def post(self):
         data = request.get_json()
@@ -114,17 +116,21 @@ class Login(Resource):
             valid_data = login_schema.load(data)
         except ValidationError as e:
             return {'message': str(e)}, 400
+        except Exception as e:
+            return {'message': str(e)}, 500
         
         # Login the user
         try:
             access_token, refresh_token = UserService.login_user(valid_data)
         except ValidationError as e:
             return {'message': str(e)}, 400
+        except Exception as e:
+            return {'message': str(e)}, 500
         
         return {'access_token': access_token, 'refresh_token': refresh_token}, 200
     
 @auth_ns.route('/refresh', methods=['POST'])
-class Refresh(Resource):
+class RefreshResource(Resource):
     @jwt_required(refresh=True) # Ensure that the token is a refresh token
     def post(self):
 
@@ -133,6 +139,8 @@ class Refresh(Resource):
             new_access_token = create_access_token(identity=current_user_id, expires_delta=current_app.config['JWT_ACCESS_TOKEN_EXPIRES'])
         except ValidationError as e:
             return {'message': str(e)}, 400
+        except Exception as e:
+            return {'message': str(e)}, 500
         
         return {'access_token': new_access_token}, 200
 

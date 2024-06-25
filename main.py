@@ -7,6 +7,7 @@ from exts import db
 import os
 from models import User, Address, Payment, Category, Product, Cart, Order, OrderItem, CartProduct, ProductImage, FeaturedProduct
 from api.auth import auth_ns
+from api.administrator import admin_ns
 
 load_dotenv() # Load environment variables from .env file
 
@@ -36,5 +37,6 @@ def create_app():
 
     # Import the namespaces
     api.add_namespace(auth_ns)
+    api.add_namespace(admin_ns)
 
     return app
