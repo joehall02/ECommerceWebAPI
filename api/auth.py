@@ -83,7 +83,6 @@ login_model = auth_ns.model('Login', {
 
 @auth_ns.route('/signup', methods=['POST'])
 class SignupResource(Resource):
-    @auth_ns.expect(signup_model)
     def post(self):
         data = request.get_json()
 
@@ -107,7 +106,6 @@ class SignupResource(Resource):
 
 @auth_ns.route('/login', methods=['POST'])
 class LoginResource(Resource):
-    @auth_ns.expect(login_model)
     def post(self):
         data = request.get_json()
 
@@ -133,7 +131,6 @@ class LoginResource(Resource):
 class RefreshResource(Resource):
     @jwt_required(refresh=True) # Ensure that the token is a refresh token
     def post(self):
-
         try:
             current_user_id = get_jwt_identity()
             new_access_token = create_access_token(identity=current_user_id, expires_delta=current_app.config['JWT_ACCESS_TOKEN_EXPIRES'])
