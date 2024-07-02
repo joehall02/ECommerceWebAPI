@@ -6,8 +6,10 @@ from dotenv import load_dotenv
 from exts import db
 import os
 from models import User, Address, Payment, Category, Product, Cart, Order, OrderItem, CartProduct, ProductImage, FeaturedProduct
-from api.auth import auth_ns
-from api.administrator import admin_ns
+from api.user import user_ns
+from api.category import category_ns
+from api.product import product_ns
+from api.order import order_ns
 
 load_dotenv() # Load environment variables from .env file
 
@@ -36,7 +38,9 @@ def create_app():
     api = Api(app, doc='/docs') 
 
     # Import the namespaces
-    api.add_namespace(auth_ns)
-    api.add_namespace(admin_ns)
+    api.add_namespace(user_ns)
+    api.add_namespace(category_ns)
+    api.add_namespace(product_ns)
+    api.add_namespace(order_ns)
 
     return app

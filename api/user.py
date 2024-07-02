@@ -1,6 +1,6 @@
 from dotenv import load_dotenv
 from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity, jwt_required
-from models import User
+from models import User, Cart
 from flask import Flask, current_app, request
 from flask_restx import Namespace, Resource, fields
 from marshmallow import Schema, fields as ma_fields, ValidationError
@@ -40,6 +40,7 @@ class UserService:
         if email_exists or phone_number_exists:
             raise ValidationError('User with the provided email or phone number already exists')
 
+        # Create a new user account
         new_user = User(
             first_name=data['first_name'],
             last_name=data['last_name'],
@@ -49,6 +50,13 @@ class UserService:
             role='customer'
         )
         new_user.save()
+
+        # Create a cart for the user
+        new_cart = Cart(
+            user_id=new_user.id
+        )
+        new_cart.save()
+
         return new_user
     
     @staticmethod
@@ -64,11 +72,11 @@ class UserService:
         return access_token, refresh_token
         
 
-auth_ns = Namespace('auth', description='Authentication operations')
+user_ns = Namespace('user', description='User operations')
 
 # Define the models for the signup and login used for api
 # documentation, actual validation is done using the schema
-signup_model = auth_ns.model('Signup', {
+signup_model = user_ns.model('Signup', {
     'first_name': fields.String(required=True),
     'last_name': fields.String(required=True),
     'email': fields.String(required=True),
@@ -76,12 +84,12 @@ signup_model = auth_ns.model('Signup', {
     'phone_number': fields.String(required=False),
 })
 
-login_model = auth_ns.model('Login', {
+login_model = user_ns.model('Login', {
     'email': fields.String(required=True),
     'password': fields.String(required=True)
 })
 
-@auth_ns.route('/signup', methods=['POST'])
+@user_ns.route('/signup', methods=['POST'])
 class SignupResource(Resource):
     def post(self):
         data = request.get_json()
@@ -90,21 +98,21 @@ class SignupResource(Resource):
         try:
             valid_data = signup_schema.load(data)
         except ValidationError as e: # Return an error response if the request data is invalid
-            return {'message': str(e)}, 400
+            return {'error': str(e)}, 400
         except Exception as e:
-            return {'message': str(e)}, 500
+            return {'error': str(e)}, 500
 
         # Create a new user account
         try:
             UserService.create_user(valid_data)
         except ValidationError as e:
-            return {'message': str(e)}, 400
+            return {'error': str(e)}, 400
         except Exception as e:
-            return {'message': str(e)}, 500
+            return {'error': str(e)}, 500
 
         return {'message': 'Account created successfully'}, 201
 
-@auth_ns.route('/login', methods=['POST'])
+@user_ns.route('/login', methods=['POST'])
 class LoginResource(Resource):
     def post(self):
         data = request.get_json()
@@ -113,21 +121,21 @@ class LoginResource(Resource):
         try:
             valid_data = login_schema.load(data)
         except ValidationError as e:
-            return {'message': str(e)}, 400
+            return {'error': str(e)}, 400
         except Exception as e:
-            return {'message': str(e)}, 500
+            return {'error': str(e)}, 500
         
         # Login the user
         try:
             access_token, refresh_token = UserService.login_user(valid_data)
         except ValidationError as e:
-            return {'message': str(e)}, 400
+            return {'error': str(e)}, 400
         except Exception as e:
-            return {'message': str(e)}, 500
+            return {'error': str(e)}, 500
         
         return {'access_token': access_token, 'refresh_token': refresh_token}, 200
     
-@auth_ns.route('/refresh', methods=['POST'])
+@user_ns.route('/refresh', methods=['POST'])
 class RefreshResource(Resource):
     @jwt_required(refresh=True) # Ensure that the token is a refresh token
     def post(self):
@@ -135,13 +143,13 @@ class RefreshResource(Resource):
             current_user_id = get_jwt_identity()
             new_access_token = create_access_token(identity=current_user_id, expires_delta=current_app.config['JWT_ACCESS_TOKEN_EXPIRES'])
         except ValidationError as e:
-            return {'message': str(e)}, 400
+            return {'error': str(e)}, 400
         except Exception as e:
-            return {'message': str(e)}, 500
+            return {'error': str(e)}, 500
         
         return {'access_token': new_access_token}, 200
 
-@auth_ns.route('/test', methods=['GET'])
+@user_ns.route('/test', methods=['GET'])
 class Test(Resource):
     @jwt_required()
     def get(self):
