@@ -1,8 +1,9 @@
 from datetime import timedelta
 from flask import Flask
 from flask_restx import Api
-from config import Development
+from config import Development, Test
 from flask_jwt_extended import JWTManager
+from flask_migrate import Migrate, upgrade
 from dotenv import load_dotenv
 from exts import db
 import os
@@ -25,8 +26,16 @@ def create_app(config=Development):
     # Initialize the JWT manager
     jwt = JWTManager(app)
 
+    # Initialize the migration engine
+    migrate = Migrate(app, db)
+
     # Create an instance of the API
     api = Api(app, doc='/docs') 
+
+    # If the configuration is Test, upgrade the database to the latest migration
+    if config == Test:
+        with app.app_context():
+            upgrade()
 
     # Import the namespaces
     api.add_namespace(user_ns)
