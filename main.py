@@ -13,7 +13,7 @@ from api.category import category_ns
 from api.product import product_ns
 from api.order import order_ns
 
-def create_app(config=Development):
+def create_app(config=Test):
     # Create an instance of the Flask app
     app = Flask(__name__)
 
@@ -33,9 +33,9 @@ def create_app(config=Development):
     api = Api(app, doc='/docs') 
 
     # If the configuration is Test, upgrade the database to the latest migration
-    if config == Test:
-        with app.app_context():
-            upgrade()
+    # if config == Test:
+    #     with app.app_context():
+    #         upgrade()
 
     # Import the namespaces
     api.add_namespace(user_ns)
