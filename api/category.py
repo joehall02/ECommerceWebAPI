@@ -1,20 +1,9 @@
-from marshmallow import Schema, fields as ma_fields, ValidationError
+from marshmallow import ValidationError
 from models import Category
 from flask import request
 from flask_restx import Namespace, Resource, fields, marshal
 from flask_jwt_extended import jwt_required
-
-# Define the schema for the models used to validate the request data
-class CategorySchema(Schema):
-    name = ma_fields.String(required=True, error_messages={'required': 'Category name is required', 'null': 'Category name cannot be empty'})
-
-class ProductSchema(Schema):
-    name = ma_fields.String(required=True, error_messages={'required': 'Product name is required', 'null': 'Product name cannot be empty'})
-    description = ma_fields.String(required=True, error_messages={'required': 'Product description is required', 'null': 'Product description cannot be empty'})
-    price = ma_fields.Decimal(required=True, error_messages={'required': 'Product price is required', 'null': 'Product price cannot be empty'})
-    stock = ma_fields.Integer(required=True, error_messages={'required': 'Product stock is required', 'null': 'Product stock cannot be empty'})
-    category_id = ma_fields.Integer(required=True, error_messages={'required': 'Category ID is required', 'null': 'Category ID cannot be empty'})
-
+from schemas import CategorySchema, ProductSchema
 
 # Define the schema instances
 category_schema = CategorySchema()

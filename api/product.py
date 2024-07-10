@@ -1,23 +1,9 @@
-from marshmallow import Schema, fields as ma_fields, ValidationError
+from marshmallow import ValidationError
 from models import Product, Category, FeaturedProduct, ProductImage
 from flask import request
 from flask_restx import Namespace, Resource, fields, marshal
 from flask_jwt_extended import jwt_required
-
-# Define the schema for the models used to validate the request data
-class ProductSchema(Schema):
-    name = ma_fields.String(required=True, error_messages={'required': 'Product name is required', 'null': 'Product name cannot be empty'})
-    description = ma_fields.String(required=True, error_messages={'required': 'Product description is required', 'null': 'Product description cannot be empty'})
-    price = ma_fields.Decimal(required=True, error_messages={'required': 'Product price is required', 'null': 'Product price cannot be empty'})
-    stock = ma_fields.Integer(required=True, error_messages={'required': 'Product stock is required', 'null': 'Product stock cannot be empty'})
-    category_id = ma_fields.Integer(required=True, error_messages={'required': 'Category ID is required', 'null': 'Category ID cannot be empty'})
-
-class FeaturedProductSchema(Schema):
-    product_id = ma_fields.Integer(required=True, error_messages={'required': 'Product ID is required', 'null': 'Product ID cannot be empty'})
-
-class ProductImageSchema(Schema):
-    image_path = ma_fields.String(required=True, error_messages={'required': 'Image path is required', 'null': 'Image path cannot be empty'})
-    product_id = ma_fields.Integer(required=True, error_messages={'required': 'Product ID is required', 'null': 'Product ID cannot be empty'})
+from schemas import ProductSchema, ProductImageSchema, FeaturedProductSchema
 
 # Define the schema instances
 product_schema = ProductSchema()

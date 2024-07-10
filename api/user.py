@@ -3,23 +3,12 @@ from flask_jwt_extended import create_access_token, create_refresh_token, get_jw
 from models import User, Cart
 from flask import Flask, current_app, request
 from flask_restx import Namespace, Resource, fields
-from marshmallow import Schema, fields as ma_fields, ValidationError
+from marshmallow import ValidationError
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta, timezone
+from schemas import SignupSchema, LoginSchema
 import jwt
 import os
-
-# Define the schema for the signup and login operations used to validate the request data
-class SignupSchema(Schema):
-    first_name = ma_fields.String(required=True, error_messages={'required': 'First name is required', 'null': 'First name cannot be empty'})
-    last_name = ma_fields.String(required=True, error_messages={'required': 'Last name is required', 'null': 'Last name cannot be empty'})
-    email = ma_fields.Email(required=True, error_messages={'required': 'Email is required', 'null': 'Email cannot be empty'})
-    password = ma_fields.String(required=True, error_messages={'required': 'Password is required', 'null': 'Password cannot be empty'})
-    phone_number = ma_fields.String(required=False, error_messages={'null': 'Phone number cannot be empty'})
-
-class LoginSchema(Schema):
-    email = ma_fields.Email(required=True, error_messages={'required': 'Email is required', 'null': 'Email cannot be empty'})
-    password = ma_fields.String(required=True, error_messages={'required': 'Password is required', 'null': 'Password cannot be empty'})
 
 # Define the schema instances
 signup_schema = SignupSchema()
