@@ -1,5 +1,5 @@
 from flask import request
-from models import Payment, User
+from models import Payment
 from schemas import PaymentSchema
 from marshmallow import ValidationError
 from flask_restx import Namespace, Resource, fields, marshal
@@ -12,7 +12,7 @@ payment_schema = PaymentSchema()
 class PaymentService:
     @staticmethod
     def create_payment(data):
-        user = get_jwt_identity()
+        user = get_jwt_identity() # Get the user id from the access token
 
         # Check if the user exists
         if not user:
@@ -30,8 +30,14 @@ class PaymentService:
         return new_payment
 
     @staticmethod
-    def get_all_payment_methods(user_id):
-        payments = Payment.query.filter_by(user_id=user_id).all()
+    def get_all_payment_methods():
+        user = get_jwt_identity() # Get the user id from the access token
+
+        # Check if the user exists
+        if not user:
+            raise ValidationError('User not found')
+
+        payments = Payment.query.filter_by(user_id=user).all()
 
         if not payments:
             raise ValidationError('Payments not found')
@@ -77,8 +83,7 @@ class PaymentResource(Resource):
     def get(self): # Get all payment methods for a user
         # Get all payment methods for a user
         try:
-            user_id = get_jwt_identity() # Get the user ID from the access token
-            payments = PaymentService.get_all_payment_methods(user_id)
+            payments = PaymentService.get_all_payment_methods()
         except ValidationError as e:
             return {'error': str(e)}, 400
         except Exception as e:
@@ -87,7 +92,7 @@ class PaymentResource(Resource):
         try:
             payments = payment_schema.dump(payments, many=True)
         except ValidationError as e:
-            return {'error': str(e)}, 500
+            return {'error': str(e)}, 400
         except Exception as e:
             return {'error': str(e)}, 500
 
@@ -136,7 +141,7 @@ class PaymentResource(Resource):
         return marshal(payment, payment_model), 200
     
     @jwt_required()
-    def delete(self, payment_id):
+    def delete(self, payment_id): # Delete a payment method
         try:
             PaymentService.delete_payment(payment_id)
         except ValidationError as e:

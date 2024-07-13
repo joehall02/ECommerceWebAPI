@@ -48,3 +48,10 @@ class PaymentSchema(Schema):
     name_on_card = ma_fields.String(required=True, error_messages={'required': 'Name of card is required', 'null': 'Name of card cannot be empty'})
     expiry_date = ma_fields.Date(required=True, error_messages={'required': 'Expiry date is required', 'null': 'Expiry date cannot be empty'})
     security_code = ma_fields.Integer(required=True, error_messages={'required': 'Security code is required', 'null': 'Security code cannot be empty'})
+
+class AddressSchema(Schema):
+    address_line_1 = ma_fields.String(required=True, error_messages={'required': 'Address line 1 is required', 'null': 'Address line 1 cannot be empty'})
+    address_line_2 = ma_fields.String(required=False, error_messages={'null': 'Address line 2 cannot be empty'})
+    city = ma_fields.String(required=True, error_messages={'required': 'City is required', 'null': 'City cannot be empty'})
+    postcode = ma_fields.String(required=True, error_messages={'required': 'Postcode is required', 'null': 'City cannot be empty'})
+    
