@@ -6,12 +6,12 @@ class ProductTestCase(BaseTestCase):
         super().setUp() # Call the setUp() method of the BaseTestCase class
 
         # Create a category
-        self.client.post('/category/', headers={'Authorization': 'Bearer ' + self.access_token}, json={
+        self.client.post('/category/admin', headers={'Authorization': 'Bearer ' + self.access_token}, json={
             'name': 'Category_test'
         })
 
         # Create a product
-        self.client.post('/product/', headers={'Authorization': 'Bearer ' + self.access_token}, json={
+        self.client.post('/product/admin', headers={'Authorization': 'Bearer ' + self.access_token}, json={
             'name': 'Product_test',
             'description': 'Product_description',
             'stock': 10,
@@ -20,7 +20,7 @@ class ProductTestCase(BaseTestCase):
         })
 
         # Create a product to be deleted
-        self.client.post('/product/', headers={'Authorization': 'Bearer ' + self.access_token}, json={
+        self.client.post('/product/admin', headers={'Authorization': 'Bearer ' + self.access_token}, json={
             'name': 'Product_to_delete',
             'description': 'Product_description',
             'stock': 10,
@@ -29,12 +29,12 @@ class ProductTestCase(BaseTestCase):
         })
 
         # Create a featured product
-        self.client.post('/product/featured-product/1', headers={'Authorization': 'Bearer ' + self.access_token})
+        self.client.post('/product/admin/featured-product/1', headers={'Authorization': 'Bearer ' + self.access_token})
 
     # Product tests
     def test_create_product(self):
         # Send a POST request to the endpoint
-        response = self.client.post('/product/', headers={'Authorization': 'Bearer ' + self.access_token}, json={
+        response = self.client.post('/product/admin', headers={'Authorization': 'Bearer ' + self.access_token}, json={
             'name': 'Test_product',
             'description': 'Test_description',
             'stock': 10,
@@ -60,7 +60,7 @@ class ProductTestCase(BaseTestCase):
 
     def test_update_product(self):
         # Send a PUT request to the endpoint
-        response = self.client.put('/product/1', headers={'Authorization': 'Bearer ' + self.access_token}, json={
+        response = self.client.put('/product/admin/1', headers={'Authorization': 'Bearer ' + self.access_token}, json={
             'name': 'Updated_name',
             'description': 'Updated_description',
             'stock': 10,
@@ -73,7 +73,7 @@ class ProductTestCase(BaseTestCase):
 
     def test_delete_product(self):
         # Send a DELETE request to the endpoint
-        response = self.client.delete('/product/2', headers={'Authorization': 'Bearer ' + self.access_token})
+        response = self.client.delete('/product/admin/2', headers={'Authorization': 'Bearer ' + self.access_token})
 
         # Check if the response is correct
         self.assertEqual(response.status_code, 200)
@@ -89,7 +89,7 @@ class ProductTestCase(BaseTestCase):
 
     def test_create_featured_product(self):
         # Send a POST request to the endpoint
-        response = self.client.post('/product/featured-product/2', headers={'Authorization': 'Bearer ' + self.access_token})
+        response = self.client.post('/product/admin/featured-product/2', headers={'Authorization': 'Bearer ' + self.access_token})
 
         # Check if the response is correct
         self.assertEqual(response.status_code, 201)
@@ -103,7 +103,7 @@ class ProductTestCase(BaseTestCase):
 
     def test_delete_featured_product(self):
         # Send a DELETE request to the endpoint
-        response = self.client.delete('/product/featured-product/1', headers={'Authorization': 'Bearer ' + self.access_token})
+        response = self.client.delete('/product/admin/featured-product/1', headers={'Authorization': 'Bearer ' + self.access_token})
 
         # Check if the response is correct
         self.assertEqual(response.status_code, 200)

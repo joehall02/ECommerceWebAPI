@@ -181,7 +181,7 @@ product_image_model = product_ns.model('ProductImage', {
 })
 
 # Define the routes for the product operations
-@product_ns.route('/', methods=['POST', 'GET'])
+@product_ns.route('/', methods=['GET'])
 class ProductResource(Resource):
     @jwt_required()
     def get(self): # Get all products
@@ -200,30 +200,8 @@ class ProductResource(Resource):
             return {'error': str(e)}, 500
         
         return marshal(products, product_model), 200
-
-    @jwt_required()
-    def post(self): # Create a new product
-        data = request.get_json()
-
-        # Validate the request data
-        try:
-            valid_data = product_schema.load(data)
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
         
-        # Create a new product
-        try:
-            ProductService.create_product(valid_data)
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
-        
-        return {'message': 'Product created successfully'}, 201
-        
-@product_ns.route('/<int:product_id>', methods=['GET', 'PUT', 'DELETE'])
+@product_ns.route('/<int:product_id>', methods=['GET'])
 class ProductResource(Resource):
     @jwt_required()
     def get(self, product_id): # Get a single product
@@ -245,6 +223,75 @@ class ProductResource(Resource):
         
         return marshal(product, product_model), 200
     
+# Define Featured Product routes for featured product operations
+@product_ns.route('/featured-product', methods=['GET'])
+class FeaturedProductResource(Resource):
+    @jwt_required()
+    def get(self): # Get all featured products        
+        try:
+            featured_products = FeaturedProductService.get_all_featured_products()
+        except ValidationError as e:
+            return {'error': str(e)}, 400
+        except Exception as e:
+            return {'error': str(e)}, 500
+        
+        # Serialise the featured products
+        try:
+            featured_products = product_schema.dump(featured_products, many=True) # Serialize the featured products using the product schema
+        except ValidationError as e:
+            return {'error': str(e)}, 400
+        except Exception as e:
+            return {'error': str(e)}, 500
+        
+        return marshal(featured_products, product_model), 200 # return product_model
+
+@product_ns.route('/featured-product/<int:featured_product_id>', methods=['GET'])
+class FeaturedProductResource(Resource):
+    @jwt_required()
+    def get(self, featured_product_id): # Get a single featured product
+        try:
+            featured_product = FeaturedProductService.get_featured_product(featured_product_id)
+        except ValidationError as e:
+            return {'error': str(e)}, 400
+        except Exception as e:
+            return {'error': str(e)}, 500
+        
+        # Serialize the featured product
+        try:
+            featured_product = product_schema.dump(featured_product) # Serialize the featured product using the product schema
+        except ValidationError as e:
+            return {'error': str(e)}, 400
+        except Exception as e:
+            return {'error': str(e)}, 500
+        
+        return marshal(featured_product, product_model), 200 # return product_model
+
+@product_ns.route('/admin', methods=['POST'])
+class AdminProductResource(Resource):
+    @jwt_required()
+    def post(self): # Create a new product
+        data = request.get_json()
+
+        # Validate the request data
+        try:
+            valid_data = product_schema.load(data)
+        except ValidationError as e:
+            return {'error': str(e)}, 400
+        except Exception as e:
+            return {'error': str(e)}, 500
+        
+        # Create a new product
+        try:
+            ProductService.create_product(valid_data)
+        except ValidationError as e:
+            return {'error': str(e)}, 400
+        except Exception as e:
+            return {'error': str(e)}, 500
+        
+        return {'message': 'Product created successfully'}, 201
+
+@product_ns.route('/admin/<int:product_id>', methods=['PUT', 'DELETE'])
+class AdminProductResource(Resource):
     @jwt_required()
     def put(self, product_id): # Edit a product
         data = request.get_json()
@@ -279,30 +326,8 @@ class ProductResource(Resource):
         
         return {'message': 'Product deleted successfully'}, 200
     
-# Define Featured Product routes for featured product operations
-@product_ns.route('/featured-product', methods=['GET'])
-class FeaturedProductResource(Resource):
-    @jwt_required()
-    def get(self): # Get all featured products        
-        try:
-            featured_products = FeaturedProductService.get_all_featured_products()
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
-        
-        # Serialise the featured products
-        try:
-            featured_products = product_schema.dump(featured_products, many=True) # Serialize the featured products using the product schema
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
-        
-        return marshal(featured_products, product_model), 200 # return product_model
-
-@product_ns.route('/featured-product/<int:product_id>', methods=['POST'])
-class FeaturedProductResource(Resource):
+@product_ns.route('/admin/featured-product/<int:product_id>', methods=['POST'])
+class AdminFeaturedProduct(Resource):
     @jwt_required()
     def post(self, product_id): # Add a product to the featured products        
         try:
@@ -314,27 +339,8 @@ class FeaturedProductResource(Resource):
         
         return {'message': 'Product added to featured products successfully'}, 201
 
-@product_ns.route('/featured-product/<int:featured_product_id>', methods=['GET', 'DELETE'])
-class FeaturedProductResource(Resource):
-    @jwt_required()
-    def get(self, featured_product_id): # Get a single featured product
-        try:
-            featured_product = FeaturedProductService.get_featured_product(featured_product_id)
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
-        
-        # Serialize the featured product
-        try:
-            featured_product = product_schema.dump(featured_product) # Serialize the featured product using the product schema
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
-        
-        return marshal(featured_product, product_model), 200 # return product_model
-
+@product_ns.route('/admin/featured-product/<int:featured_product_id>', methods=['DELETE'])
+class AdminFeaturedProduct(Resource):
     @jwt_required()
     def delete(self, featured_product_id): # Remove a product from the featured products
         try:

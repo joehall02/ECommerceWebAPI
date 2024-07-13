@@ -93,7 +93,7 @@ product_model = category_ns.model('Product', {
 })
 
 # Define the routes for category operations
-@category_ns.route('/', methods=['POST', 'GET'])
+@category_ns.route('/', methods=['GET'])
 class CategoryResource(Resource):
     @jwt_required()
     def get(self): # Get all categories       
@@ -111,29 +111,7 @@ class CategoryResource(Resource):
 
         return marshal(categories, category_model), 200
 
-    @jwt_required()
-    def post(self): # Create new category
-        data = request.get_json()
-
-        # Validate the request data
-        try:
-            valid_data = category_schema.load(data)
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
-        
-        # Create a new category
-        try:
-            CategoryService.create_category(valid_data)
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
-        
-        return {'message': 'Category created successfully'}, 201
-
-@category_ns.route('/<int:category_id>', methods=['GET', 'PUT', 'DELETE'])
+@category_ns.route('/<int:category_id>', methods=['GET'])
 class CategoryResource(Resource):
     @jwt_required()
     def get(self, category_id): # Get all products in a category
@@ -155,6 +133,32 @@ class CategoryResource(Resource):
         
         return marshal(products, product_model), 200
 
+@category_ns.route('/admin', methods=['POST'])
+class AdminCategoryResource(Resource):
+    @jwt_required()
+    def post(self): # Create new category
+        data = request.get_json()
+
+        # Validate the request data
+        try:
+            valid_data = category_schema.load(data)
+        except ValidationError as e:
+            return {'error': str(e)}, 400
+        except Exception as e:
+            return {'error': str(e)}, 500
+        
+        # Create a new category
+        try:
+            CategoryService.create_category(valid_data)
+        except ValidationError as e:
+            return {'error': str(e)}, 400
+        except Exception as e:
+            return {'error': str(e)}, 500
+        
+        return {'message': 'Category created successfully'}, 201
+    
+@category_ns.route('/admin/<int:category_id>', methods=['PUT', 'DELETE'])
+class AdminCategoryResource(Resource):
     @jwt_required()
     def put(self, category_id): # Edit category
         data = request.get_json()

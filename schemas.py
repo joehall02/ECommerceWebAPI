@@ -33,6 +33,12 @@ class OrderSchema(Schema):
     address_id = ma_fields.Integer(required=True, error_messages={'required': 'Address ID is required', 'null': 'Address ID cannot be empty'})
     payment_id = ma_fields.Integer(required=True, error_messages={'required': 'Payment ID is required', 'null': 'Payment ID cannot be empty'})
 
+class OrderItemSchema(Schema):
+    quantity = ma_fields.Integer(required=True, error_messages={'required': 'Quantity is required', 'null': 'Quantity cannot be empty'})
+    price = ma_fields.Decimal(required=True, error_messages={'required': 'Price is required', 'null': 'Price cannot be empty'})
+    product_id = ma_fields.Integer(required=True, error_messages={'required': 'Product ID is required', 'null': 'Product ID cannot be empty'})
+    order_id = ma_fields.Integer(required=True, error_messages={'required': 'Order ID is required', 'null': 'Order ID cannot be empty'})
+
 class CategorySchema(Schema):
     name = ma_fields.String(required=True, error_messages={'required': 'Category name is required', 'null': 'Category name cannot be empty'})
 

@@ -6,17 +6,17 @@ class CategoryTestCase(BaseTestCase):
         super().setUp() # Call the setUp() method of the BaseTestCase class
 
         # Create a category
-        self.client.post('/category/', headers={'Authorization': 'Bearer ' + self.access_token}, json={
+        self.client.post('/category/admin', headers={'Authorization': 'Bearer ' + self.access_token}, json={
             'name': 'Category_test'
         })
 
         # Create a category to be deleted
-        self.client.post('/category/', headers={'Authorization': 'Bearer ' + self.access_token}, json={
+        self.client.post('/category/admin', headers={'Authorization': 'Bearer ' + self.access_token}, json={
             'name': 'Category_to_delete'
         })
 
         # Create a product
-        self.client.post('/product/', headers={'Authorization': 'Bearer ' + self.access_token}, json={
+        self.client.post('/product/admin', headers={'Authorization': 'Bearer ' + self.access_token}, json={
             'name': 'Product_test',
             'description': 'Product_description',
             'stock': 10,
@@ -26,7 +26,7 @@ class CategoryTestCase(BaseTestCase):
 
     def test_create_category(self):
         # Send a POST request to the endpoint
-        response = self.client.post('/category/', headers={'Authorization': 'Bearer ' + self.access_token}, json={
+        response = self.client.post('/category/admin', headers={'Authorization': 'Bearer ' + self.access_token}, json={
             'name': 'Test_category'
         })
 
@@ -49,7 +49,7 @@ class CategoryTestCase(BaseTestCase):
 
     def test_update_category(self):
         # Send a PUT request to the endpoint
-        response = self.client.put('/category/1', headers={'Authorization': 'Bearer ' + self.access_token}, json={
+        response = self.client.put('/category/admin/1', headers={'Authorization': 'Bearer ' + self.access_token}, json={
             'name': 'Updated_name'
         })
 
@@ -58,7 +58,7 @@ class CategoryTestCase(BaseTestCase):
 
     def test_delete_category(self):
         # Send a DELETE request to the endpoint
-        response = self.client.delete('/category/2', headers={'Authorization': 'Bearer ' + self.access_token})
+        response = self.client.delete('/category/admin/2', headers={'Authorization': 'Bearer ' + self.access_token})
 
         # Check if the response is correct
         self.assertEqual(response.status_code, 200)
