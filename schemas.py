@@ -1,6 +1,5 @@
 from marshmallow import Schema, fields as ma_fields
 
-
 class SignupSchema(Schema):
     first_name = ma_fields.String(required=True, error_messages={'required': 'First name is required', 'null': 'First name cannot be empty'})
     last_name = ma_fields.String(required=True, error_messages={'required': 'Last name is required', 'null': 'Last name cannot be empty'})
@@ -43,3 +42,9 @@ class ProductSchema(Schema):
     price = ma_fields.Decimal(required=True, error_messages={'required': 'Product price is required', 'null': 'Product price cannot be empty'})
     stock = ma_fields.Integer(required=True, error_messages={'required': 'Product stock is required', 'null': 'Product stock cannot be empty'})
     category_id = ma_fields.Integer(required=True, error_messages={'required': 'Category ID is required', 'null': 'Category ID cannot be empty'})
+
+class PaymentSchema(Schema):
+    card_number = ma_fields.Integer(required=True, error_messages={'required': 'Card number is required', 'null': 'Card number cannot be empty'})
+    name_on_card = ma_fields.String(required=True, error_messages={'required': 'Name of card is required', 'null': 'Name of card cannot be empty'})
+    expiry_date = ma_fields.Date(required=True, error_messages={'required': 'Expiry date is required', 'null': 'Expiry date cannot be empty'})
+    security_code = ma_fields.Integer(required=True, error_messages={'required': 'Security code is required', 'null': 'Security code cannot be empty'})

@@ -54,7 +54,7 @@ class Payment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     card_number = db.Column(db.Integer, nullable=False)
     name_on_card = db.Column(db.String(100), nullable=False)
-    expiry_date = db.Column(db.DateTime, nullable=False)
+    expiry_date = db.Column(db.Date, nullable=False)
     security_code = db.Column(db.Integer, nullable=False)
 
     # Foreign key
