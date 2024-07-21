@@ -59,6 +59,7 @@ class AdminOrderResource(Resource):
     def get(self): # Get all customer orders
         pass
 
+class AdminOrderResource(Resource):  
     @jwt_required()
     def put(self): # Change the status of a customer order
         pass

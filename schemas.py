@@ -49,6 +49,14 @@ class ProductSchema(Schema):
     stock = ma_fields.Integer(required=True, error_messages={'required': 'Product stock is required', 'null': 'Product stock cannot be empty'})
     category_id = ma_fields.Integer(required=True, error_messages={'required': 'Category ID is required', 'null': 'Category ID cannot be empty'})
 
+class CartSchema(Schema):
+    user_id = ma_fields.Integer(required=True, error_messages={'required': 'User ID is required', 'null': 'User ID cannot be empty'})
+
+class CartProductSchema(Schema):
+    quantity = ma_fields.Integer(required=True, error_messages={'required': 'Quantity is required', 'null': 'Quantity cannot be empty'})
+    product_id = ma_fields.Integer(required=True, error_messages={'required': 'Product ID is required', 'null': 'Product ID cannot be empty'})
+    cart_id = ma_fields.Integer(required=True, error_messages={'required': 'Cart ID is required', 'null': 'Cart ID cannot be empty'})
+
 class PaymentSchema(Schema):
     card_number = ma_fields.Integer(required=True, error_messages={'required': 'Card number is required', 'null': 'Card number cannot be empty'})
     name_on_card = ma_fields.String(required=True, error_messages={'required': 'Name of card is required', 'null': 'Name of card cannot be empty'})
