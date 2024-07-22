@@ -14,8 +14,9 @@ from api.product import product_ns
 from api.order import order_ns
 from api.payment import payment_ns
 from api.address import address_ns
+from api.cart import cart_ns
 
-def create_app(config=Test):
+def create_app(config=Development):
     # Create an instance of the Flask app
     app = Flask(__name__)
 
@@ -46,5 +47,6 @@ def create_app(config=Test):
     api.add_namespace(order_ns)
     api.add_namespace(payment_ns)
     api.add_namespace(address_ns)
+    api.add_namespace(cart_ns)
 
     return app

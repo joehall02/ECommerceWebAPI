@@ -57,6 +57,10 @@ class CartProductSchema(Schema):
     product_id = ma_fields.Integer(required=True, error_messages={'required': 'Product ID is required', 'null': 'Product ID cannot be empty'})
     cart_id = ma_fields.Integer(required=True, error_messages={'required': 'Cart ID is required', 'null': 'Cart ID cannot be empty'})
 
+class ProductCartProductCombinedSchema(Schema):
+    product = ma_fields.Nested(ProductSchema)
+    cart_product = ma_fields.Nested(CartProductSchema)
+
 class PaymentSchema(Schema):
     card_number = ma_fields.Integer(required=True, error_messages={'required': 'Card number is required', 'null': 'Card number cannot be empty'})
     name_on_card = ma_fields.String(required=True, error_messages={'required': 'Name of card is required', 'null': 'Name of card cannot be empty'})
