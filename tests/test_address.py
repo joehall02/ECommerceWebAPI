@@ -5,14 +5,6 @@ class AddressTestCase(BaseTestCase):
     def setUp(self):
         super().setUp()
 
-        # Create an address
-        self.client.post('/address/', headers={'Authorization': 'Bearer ' + self.access_token}, json={
-            'address_line_1': 'Test_address_line_1',
-            'address_line_2': 'Test_address_line_2',
-            'city': 'Test_city',
-            'postcode': 'Test_postcode'
-        })
-
     # Address tests
     def test_create_address(self):
         # Send a POST request to the endpoint

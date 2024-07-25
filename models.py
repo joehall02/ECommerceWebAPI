@@ -199,7 +199,7 @@ class FeaturedProduct(db.Model):
 class Order(db.Model):
     __tablename__ = 'Order'
     id = db.Column(db.Integer, primary_key=True)
-    order_date = db.Column(db.DateTime, nullable=False)
+    order_date = db.Column(db.Date, nullable=False)
     total_price = db.Column(db.DECIMAL(10, 2), nullable=False)
     status = db.Column(db.String(50), nullable=False)
     

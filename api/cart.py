@@ -13,9 +13,6 @@ product_cart_product_combined_schema = ProductCartProductCombinedSchema()
 
 # Services
 class CartService:
-    pass
-
-class CartProductService:
     @staticmethod
     def get_all_products_in_cart():
         user = get_jwt_identity()
@@ -135,7 +132,7 @@ class CartProductResource(Resource):
     @jwt_required()
     def get(self):
         try:
-            products = CartProductService.get_all_products_in_cart()
+            products = CartService.get_all_products_in_cart()
         except ValidationError as e:
             return {'message': str(e)}, 400
         except Exception as e:
@@ -155,7 +152,7 @@ class CartProductDetailResource(Resource):
     @jwt_required()
     def delete(self, cart_product_id):
         try:
-            CartProductService.delete_product_from_cart(cart_product_id)
+            CartService.delete_product_from_cart(cart_product_id)
         except ValidationError as e:
             return {'message': str(e)}, 400
         except Exception as e:
@@ -169,7 +166,7 @@ class CartProductAddResource(Resource):
     def post(self, product_id):
         # Add the product to the cart
         try:
-            CartProductService.add_product_to_cart(product_id)
+            CartService.add_product_to_cart(product_id)
         except ValidationError as e:
             return {'message': str(e)}, 400
         except Exception as e:

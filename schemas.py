@@ -26,7 +26,7 @@ class ProductImageSchema(Schema):
     product_id = ma_fields.Integer(required=True, error_messages={'required': 'Product ID is required', 'null': 'Product ID cannot be empty'})
 
 class OrderSchema(Schema):
-    order_date = ma_fields.DateTime(required=True, error_messages={'required': 'Order date is required', 'null': 'Order date cannot be empty'})
+    order_date = ma_fields.Date(required=True, error_messages={'required': 'Order date is required', 'null': 'Order date cannot be empty'})
     total_price = ma_fields.Decimal(required=True, error_messages={'required': 'Total price is required', 'null': 'Total price cannot be empty'})
     status = ma_fields.String(required=True, error_messages={'required': 'Status is required', 'null': 'Status cannot be empty'})
     user_id = ma_fields.Integer(required=True, error_messages={'required': 'User ID is required', 'null': 'User ID cannot be empty'})
@@ -38,6 +38,10 @@ class OrderItemSchema(Schema):
     price = ma_fields.Decimal(required=True, error_messages={'required': 'Price is required', 'null': 'Price cannot be empty'})
     product_id = ma_fields.Integer(required=True, error_messages={'required': 'Product ID is required', 'null': 'Product ID cannot be empty'})
     order_id = ma_fields.Integer(required=True, error_messages={'required': 'Order ID is required', 'null': 'Order ID cannot be empty'})
+
+class OrderItemCombinedSchema(Schema):
+    order = ma_fields.Nested(OrderSchema)
+    order_items = ma_fields.List(ma_fields.Nested(OrderItemSchema)) # List of order items
 
 class CategorySchema(Schema):
     name = ma_fields.String(required=True, error_messages={'required': 'Category name is required', 'null': 'Category name cannot be empty'})

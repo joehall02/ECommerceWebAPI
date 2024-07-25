@@ -5,14 +5,6 @@ class PaymentTestCase(BaseTestCase):
     def setUp(self):
         super().setUp()
 
-        # Create a payment method
-        self.client.post('/payment/', headers={'Authorization': 'Bearer ' + self.access_token}, json={
-            'card_number': '123456789',
-            'name_on_card': 'Test_name',
-            'expiry_date': '2026-12-12',
-            'security_code': '123'
-        })
-
     # Payment tests
     def test_create_payment(self):
         # Send a POST request to the endpoint

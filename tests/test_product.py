@@ -5,20 +5,6 @@ class ProductTestCase(BaseTestCase):
     def setUp(self):
         super().setUp() # Call the setUp() method of the BaseTestCase class
 
-        # Create a category
-        self.client.post('/category/admin', headers={'Authorization': 'Bearer ' + self.access_token}, json={
-            'name': 'Category_test'
-        })
-
-        # Create a product
-        self.client.post('/product/admin', headers={'Authorization': 'Bearer ' + self.access_token}, json={
-            'name': 'Product_test',
-            'description': 'Product_description',
-            'stock': 10,
-            'price': 1000,
-            'category_id': 1
-        })
-
         # Create a product to be deleted
         self.client.post('/product/admin', headers={'Authorization': 'Bearer ' + self.access_token}, json={
             'name': 'Product_to_delete',

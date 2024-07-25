@@ -35,9 +35,10 @@ def create_app(config=Development):
     # Create an instance of the API
     api = Api(app, doc='/docs') 
 
-    # If the configuration is Test, upgrade the database to the latest migration
+    # # If the configuration is Test, upgrade the database to the latest migration
     if config == Test:
         with app.app_context():
+            db.create_all()
             upgrade()
 
     # Import the namespaces

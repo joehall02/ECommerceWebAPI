@@ -39,6 +39,36 @@ class BaseTestCase(TestCase):
         self.access_token = data['access_token']
         self.refresh_token = data['refresh_token']
 
+        # Create a category
+        self.client.post('/category/admin', headers={'Authorization': 'Bearer ' + self.access_token}, json={
+            'name': 'Category_test'
+        })
+
+        # Create a product
+        self.client.post('/product/admin', headers={'Authorization': 'Bearer ' + self.access_token}, json={
+            'name': 'Product_test',
+            'description': 'Product_description',
+            'stock': 10,
+            'price': 1000,
+            'category_id': 1
+        })
+
+        # Create an address
+        self.client.post('/address/', headers={'Authorization': 'Bearer ' + self.access_token}, json={
+            'address_line_1': 'Test_address_line_1',
+            'address_line_2': 'Test_address_line_2',
+            'city': 'Test_city',
+            'postcode': 'Test_postcode'
+        })
+
+        # Create a payment method
+        self.client.post('/payment/', headers={'Authorization': 'Bearer ' + self.access_token}, json={
+            'card_number': '123456789',
+            'name_on_card': 'Test_name',
+            'expiry_date': '2026-12-12',
+            'security_code': '123'
+        })
+
     # Tear down the test client automatically after each test
     def tearDown(self):
         # Drop all tables

@@ -2,6 +2,9 @@ from base import BaseTestCase
 
 # Tests for all user related endpoints
 class UserTestCase(BaseTestCase):
+    def setUp(self):
+        super().setUp() # Call the setUp() method of the BaseTestCase class
+
     def test_signup(self):    
         # Send a POST request to the endpoint
         response = self.client.post('/user/signup', json={
