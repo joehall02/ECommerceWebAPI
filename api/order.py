@@ -5,6 +5,7 @@ from flask import request
 from flask_restx import Namespace, Resource, fields, marshal
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from schemas import OrderSchema, OrderItemSchema, OrderItemCombinedSchema
+from decorators import admin_required
 
 # Define the schema instances
 order_schema = OrderSchema()
@@ -215,6 +216,7 @@ class OrderResource(Resource):
 @order_ns.route('/admin', methods=['GET'])
 class AdminOrderResource(Resource):
     @jwt_required()
+    @admin_required()
     def get(self): # Get all customer orders
         try:
             orders = OrderService.get_all_customer_orders()
@@ -235,6 +237,7 @@ class AdminOrderResource(Resource):
 @order_ns.route('/admin/<int:order_id>', methods=['PUT'])
 class AdminOrderResource(Resource):  
     @jwt_required()
+    @admin_required()
     def put(self, order_id): # Change the status of a customer order
         data = request.get_json()
 

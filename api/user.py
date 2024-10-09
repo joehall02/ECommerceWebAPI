@@ -29,6 +29,22 @@ class UserService:
         if email_exists or phone_number_exists:
             raise ValidationError('User with the provided email or phone number already exists')
 
+        # Check if there are any users in the database
+        user_count = User.query.count()
+
+        # Default role is customer
+        role = "customer"
+
+        # Check if the role is provided and is valid, only allow the first user to be an admin
+        if 'role' in data and data['role']:
+            if data['role'] == 'admin':
+                if user_count == 0:
+                    role = 'admin' # Allow first user to be an admin
+                else:
+                    raise ValidationError('Only the first user can be an admin')
+            else:
+                raise ValidationError('Invalid role')
+
         # Create a new user account
         new_user = User(
             first_name=data['first_name'],
@@ -36,7 +52,7 @@ class UserService:
             password=generate_password_hash(data['password']), # Generate a password hash before storing it
             email=data['email'],
             phone_number=data.get('phone_number', None), # Safely get the phone number from the request data or default to None
-            role='customer'
+            role=role
         )
         new_user.save()
 

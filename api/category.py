@@ -4,6 +4,7 @@ from flask import request
 from flask_restx import Namespace, Resource, fields, marshal
 from flask_jwt_extended import jwt_required
 from schemas import CategorySchema, ProductSchema
+from decorators import admin_required
 
 # Define the schema instances
 category_schema = CategorySchema()
@@ -136,6 +137,7 @@ class CategoryResource(Resource):
 @category_ns.route('/admin', methods=['POST'])
 class AdminCategoryResource(Resource):
     @jwt_required()
+    @admin_required()
     def post(self): # Create new category
         data = request.get_json()
 
@@ -160,6 +162,7 @@ class AdminCategoryResource(Resource):
 @category_ns.route('/admin/<int:category_id>', methods=['PUT', 'DELETE'])
 class AdminCategoryResource(Resource):
     @jwt_required()
+    @admin_required()
     def put(self, category_id): # Edit category
         data = request.get_json()
 
@@ -182,6 +185,7 @@ class AdminCategoryResource(Resource):
         return {'message': 'Category updated successfully'}, 200
 
     @jwt_required()
+    @admin_required()
     def delete(self, category_id): # Delete a category      
         # Delete the category
         try:

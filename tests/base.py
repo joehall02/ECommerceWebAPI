@@ -24,7 +24,8 @@ class BaseTestCase(TestCase):
             'last_name': 'Test_last_name',
             'email': 'Test_email@testemail.com',
             'password': 'Test_password123@!',
-            'phone_number': '07853299124'
+            'phone_number': '07853299124',
+            "role": "admin"
         })
 
         # Get the access token and refresh token

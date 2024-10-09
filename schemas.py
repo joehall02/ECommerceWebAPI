@@ -6,6 +6,7 @@ class SignupSchema(Schema):
     email = ma_fields.Email(required=True, error_messages={'required': 'Email is required', 'null': 'Email cannot be empty'})
     password = ma_fields.String(required=True, error_messages={'required': 'Password is required', 'null': 'Password cannot be empty'})
     phone_number = ma_fields.String(required=False, error_messages={'null': 'Phone number cannot be empty'})
+    role = ma_fields.String(required=False, error_messages={'null': 'Role cannot be empty'})
 
 class LoginSchema(Schema):
     email = ma_fields.Email(required=True, error_messages={'required': 'Email is required', 'null': 'Email cannot be empty'})

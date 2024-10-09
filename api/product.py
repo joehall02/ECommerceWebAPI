@@ -4,6 +4,7 @@ from flask import request
 from flask_restx import Namespace, Resource, fields, marshal
 from flask_jwt_extended import jwt_required
 from schemas import ProductSchema, ProductImageSchema, FeaturedProductSchema
+from decorators import admin_required
 
 # Define the schema instances
 product_schema = ProductSchema()
@@ -269,6 +270,7 @@ class FeaturedProductResource(Resource):
 @product_ns.route('/admin', methods=['POST'])
 class AdminProductResource(Resource):
     @jwt_required()
+    @admin_required()
     def post(self): # Create a new product
         data = request.get_json()
 
@@ -293,6 +295,7 @@ class AdminProductResource(Resource):
 @product_ns.route('/admin/<int:product_id>', methods=['PUT', 'DELETE'])
 class AdminProductResource(Resource):
     @jwt_required()
+    @admin_required()
     def put(self, product_id): # Edit a product
         data = request.get_json()
 
@@ -315,6 +318,7 @@ class AdminProductResource(Resource):
         return {'message': 'Product updated successfully'}, 200
         
     @jwt_required()
+    @admin_required()
     def delete(self, product_id): # Delete a product
         # Delete the product
         try:
@@ -329,6 +333,7 @@ class AdminProductResource(Resource):
 @product_ns.route('/admin/featured-product/<int:product_id>', methods=['POST'])
 class AdminFeaturedProduct(Resource):
     @jwt_required()
+    @admin_required()
     def post(self, product_id): # Add a product to the featured products        
         try:
             FeaturedProductService.add_featured_product(product_id)
@@ -342,7 +347,9 @@ class AdminFeaturedProduct(Resource):
 @product_ns.route('/admin/featured-product/<int:featured_product_id>', methods=['DELETE'])
 class AdminFeaturedProduct(Resource):
     @jwt_required()
+    @admin_required()
     def delete(self, featured_product_id): # Remove a product from the featured products
+        print('featured_product_id', featured_product_id)
         try:
             FeaturedProductService.delete_featured_product(featured_product_id)
         except ValidationError as e:
