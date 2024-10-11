@@ -1,163 +1,15 @@
 from marshmallow import ValidationError
-from models import Product, Category, FeaturedProduct, ProductImage
 from flask import request
 from flask_restx import Namespace, Resource, fields, marshal
 from flask_jwt_extended import jwt_required
 from schemas import ProductSchema, ProductImageSchema, FeaturedProductSchema
 from decorators import admin_required
+from services.product_service import ProductService, FeaturedProductService
 
 # Define the schema instances
 product_schema = ProductSchema()
 featured_product_schema = FeaturedProductSchema()
 product_image_schema = ProductImageSchema()
-
-# Services    
-class ProductService:
-    @staticmethod
-    def create_product(data):
-        category = Category.query.get(data['category_id'])
-
-        # Check category exists
-        if not category:
-            raise ValidationError('Category not found')
-
-        new_product = Product(
-            name = data['name'],
-            description = data['description'],
-            price = data['price'],
-            stock = data['stock'],
-            category_id = data['category_id']
-        )
-
-        new_product.save()
-
-        return new_product
-
-    @staticmethod
-    def get_all_products():
-        products = Product.query.all()
-
-        # Check if there are any products
-        if not products:
-            raise ValidationError('No products found')
-
-        return products
-    
-    @staticmethod
-    def get_product(product_id):
-        product = Product.query.get(product_id)
-
-        # Check if the product exists
-        if not product:
-            raise ValidationError('Product not found')
-
-        return product
-
-    @staticmethod
-    def update_product(data, product_id):
-        product = Product.query.get(product_id)
-
-        # Check if the product exists
-        if not product:
-            raise ValidationError('Product not found')
-        
-        # Check if data is empty
-        if not data:
-            raise ValidationError('No data provided')
-        
-        # Check if the category exists
-        if 'category_id' in data:
-            category = Category.query.get(data['category_id'])
-            if not category:
-                raise ValidationError('Category not found')
-        
-        # Update product details
-        # Loop through the data and update the product attributes using the key-value pairs in the data
-        for key, value in data.items():
-            setattr(product, key, value) 
-
-        product.save()
-
-        return product
-        
-
-    @staticmethod
-    def delete_product(product_id):
-        product = Product.query.get(product_id)
-
-        # Check if the product exists
-        if not product:
-            raise ValidationError('Product not found')
-        
-        product.delete()
-
-        return product
-    
-class FeaturedProductService:
-    @staticmethod
-    def add_featured_product(product_id):
-        product = Product.query.get(product_id)
-
-        # Check if the product exists
-        if not product:
-            raise ValidationError('Product not found')
-        
-        featured_product = FeaturedProduct.query.filter_by(product_id=product_id).first()
-
-        # Check if the product is already featured
-        if featured_product:
-            raise ValidationError('Product is already featured')
-        
-        new_featured_product = FeaturedProduct(
-            product_id = product_id
-        )
-
-        new_featured_product.save()
-
-        return new_featured_product
-    
-    @staticmethod
-    def get_all_featured_products():
-        featured_products = FeaturedProduct.query.all()
-
-        # Check if there are any featured products
-        if not featured_products:
-            raise ValidationError('No featured products found')
-        
-        # Get the products associated with the featured products
-        # List comprehension to add all products associated with each featured product to a list, similar to a for loop
-        products = [featured_product.product for featured_product in featured_products] 
-
-        return products
-    
-    @staticmethod
-    def get_featured_product(featured_product_id):
-        featured_product = FeaturedProduct.query.get(featured_product_id)
-
-        # Check if the featured product exists
-        if not featured_product:
-            raise ValidationError('Featured product not found')
-        
-        # Get the product associated with the featured product
-        product = featured_product.product
-
-        # Check if the product exists
-        if not product:
-            raise ValidationError('Product not found')
-        
-        return product
-    
-    @staticmethod
-    def delete_featured_product(featured_product_id):
-        featured_product = FeaturedProduct.query.get(featured_product_id)
-
-        # Check if the featured product exists
-        if not featured_product:
-            raise ValidationError('Featured product not found')
-        
-        featured_product.delete()
-
-        return featured_product
 
 # Define the namespace for the product routes
 product_ns = Namespace('product', description='Product operations')
@@ -358,3 +210,24 @@ class AdminFeaturedProduct(Resource):
             return {'error': str(e)}, 500
         
         return {'message': 'Product removed from featured products successfully'}, 200
+    
+
+# Define the routes for the product image operations
+@product_ns.route('/admin/product-image/<int:product_id>', methods=['POST', 'GET'])
+class AdminProductImageResource(Resource):
+    @jwt_required()
+    @admin_required()
+    def post(self, product_id): # Add a product image for a product
+        pass
+
+    @jwt_required()
+    @admin_required()
+    def get(self, product_id): # Get all product images for a product
+        pass
+
+@product_ns.route('/admin/product-image/<int:product_image_id>', methods=['DELETE'])
+class AdminProductImageResource(Resource):
+    @jwt_required()
+    @admin_required()
+    def delete(self, product_image_id): # Delete a product image for a product
+        pass

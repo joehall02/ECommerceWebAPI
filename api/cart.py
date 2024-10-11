@@ -1,9 +1,9 @@
 from marshmallow import ValidationError
 from models import Cart, CartProduct, Product
-from flask import request
 from flask_restx import Namespace, Resource, fields, marshal
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from schemas import CartSchema, CartProductSchema, ProductSchema, ProductCartProductCombinedSchema
+from services.cart_service import CartService
 
 # Define the schema instances
 cart_schema = CartSchema()
