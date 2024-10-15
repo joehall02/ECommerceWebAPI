@@ -4,7 +4,7 @@ from flask_restx import Namespace, Resource, fields, marshal
 from flask_jwt_extended import jwt_required
 from schemas import ProductSchema, ProductImageSchema, FeaturedProductSchema
 from decorators import admin_required
-from services.product_service import ProductService, FeaturedProductService
+from services.product_service import ProductService, FeaturedProductService, ProductImageService
 
 # Define the schema instances
 product_schema = ProductSchema()
@@ -119,6 +119,26 @@ class FeaturedProductResource(Resource):
         
         return marshal(featured_product, product_model), 200 # return product_model
 
+@product_ns.route('/product-image/<int:product_id>', methods=['GET'])
+class ProductImageResource(Resource):
+    @jwt_required()
+    def get(self, product_id): # Get all product images for a product
+        try:
+            product_images = ProductImageService.get_all_product_images(product_id)
+        except ValidationError as e:
+            return {'error': str(e)}, 400
+        except Exception as e:
+            return {'error': str(e)}, 500
+        
+        try:
+            product_images = product_image_schema.dump(product_images, many=True) # Serialize the product images
+        except ValidationError as e:
+            return {'error': str(e)}, 400
+        except Exception as e:
+            return {'error': str(e)}, 500
+        
+        return marshal(product_images, product_image_model), 200
+
 @product_ns.route('/admin', methods=['POST'])
 class AdminProductResource(Resource):
     @jwt_required()
@@ -187,6 +207,8 @@ class AdminFeaturedProduct(Resource):
     @jwt_required()
     @admin_required()
     def post(self, product_id): # Add a product to the featured products        
+
+        # Create a new featured product
         try:
             FeaturedProductService.add_featured_product(product_id)
         except ValidationError as e:
@@ -210,7 +232,6 @@ class AdminFeaturedProduct(Resource):
             return {'error': str(e)}, 500
         
         return {'message': 'Product removed from featured products successfully'}, 200
-    
 
 # Define the routes for the product image operations
 @product_ns.route('/admin/product-image/<int:product_id>', methods=['POST', 'GET'])
@@ -218,16 +239,71 @@ class AdminProductImageResource(Resource):
     @jwt_required()
     @admin_required()
     def post(self, product_id): # Add a product image for a product
-        pass
+        if 'image' not in request.files:
+            return {'error': 'No image provided'}, 400
+        
+        image_file = request.files['image']
+
+        # Get the image and upload it to Google Cloud Storage and get the image path
+        try:
+            image_path = ProductImageService.upload_product_image(image_file, product_id)
+
+            # Create a new data object with the image path and product id
+            new_data = {
+                'image_path': image_path,
+                'product_id': product_id
+            }
+        except ValidationError as e:
+            return {'error': str(e)}, 400
+        except Exception as e:
+            return {'error': str(e)}, 500
+
+        # Validate the request data
+        try:
+            valid_data = product_image_schema.load(new_data)
+        except ValidationError as e:
+            return {'error': str(e)}, 400
+        except Exception as e:
+            return {'error': str(e)}, 500
+        
+        # Create a new product image
+        try:
+            ProductImageService.create_product_image(valid_data)
+        except ValidationError as e:
+            return {'error': str(e)}, 400
+        except Exception as e:
+            return {'error': str(e)}, 500
+        
+        return {'message': 'Product image created successfully'}, 201
 
     @jwt_required()
-    @admin_required()
-    def get(self, product_id): # Get all product images for a product
-        pass
+    def get(self, product_id):
+        try:
+            product_images = ProductImageService.get_all_product_images(product_id)
+        except ValidationError as e:
+            return {'error': str(e)}, 400
+        except Exception as e:
+            return {'error': str(e)}, 500
+        
+        try:
+            product_images = product_image_schema.dump(product_images, many=True) # Serialize the product images
+        except ValidationError as e:
+            return {'error': str(e)}, 400
+        except Exception as e:
+            return {'error': str(e)}, 500
+        
+        return marshal(product_images, product_image_model), 200
 
 @product_ns.route('/admin/product-image/<int:product_image_id>', methods=['DELETE'])
 class AdminProductImageResource(Resource):
     @jwt_required()
     @admin_required()
     def delete(self, product_image_id): # Delete a product image for a product
-        pass
+        try:
+            ProductImageService.delete_product_image(product_image_id)
+        except ValidationError as e:
+            return {'error': str(e)}, 400
+        except Exception as e:
+            return {'error': str(e)}, 500
+        
+        return {'message': 'Product image deleted successfully'}, 200

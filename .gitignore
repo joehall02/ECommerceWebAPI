@@ -1,5 +1,11 @@
 # Ignore .env file
 .env
 
+# Ignore service account file
+service-account-file.json
+
 # Ignore __pycache__ directory
 __pycache__/
+
+# Ignore .vscode directory
+.vscode/
