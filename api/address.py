@@ -1,12 +1,8 @@
 from flask import request
-from schemas import AddressSchema
 from marshmallow import ValidationError
 from flask_restx import Namespace, Resource, fields, marshal
 from flask_jwt_extended import jwt_required
 from services.address_service import AddressService
-
-# Define the schema instance
-address_schema = AddressSchema()
 
 # Create a namespace
 address_ns = Namespace('address', description='Address related operations')
@@ -30,32 +26,17 @@ class AddressResource(Resource):
         except ValidationError as e:
             return {'message': str(e)}, 400
         except Exception as e:
-            return {'message': str(e)}, 500
-        
-        try:
-            addresses = address_schema.dump(addresses, many=True)
-        except ValidationError as e:
-            return {'message': str(e)}, 400
-        except Exception as e:
-            return {'message': str(e)}, 500
+            return {'message': str(e)}, 500                
         
         return marshal(addresses, address_model), 200
 
     @jwt_required()
     def post(self): # Create a new address
         data = request.get_json()
-
-        # Validate the request data against the address schema
-        try:
-            valid_data = address_schema.load(data)
-        except ValidationError as e:
-            return {'message': str(e)}, 400
-        except Exception as e:
-            return {'message': str(e)}, 500
         
         # Create a new address
         try:
-            AddressService.create_address(valid_data)
+            AddressService.create_address(data)
         except ValidationError as e:
             return {'message': str(e)}, 400
         except Exception as e:
@@ -74,30 +55,15 @@ class AddressDetailResource(Resource):
         except Exception as e:
             return {'message': str(e)}, 500
         
-        try:
-            address = address_schema.dump(address)
-        except ValidationError as e:
-            return {'message': str(e)}, 400
-        except Exception as e:
-            return {'message': str(e)}, 500
-        
         return marshal(address, address_model), 200
 
     @jwt_required()
     def put(self, address_id): # Update a single address
         data = request.get_json()
-
-        # Validate the request data against the address schema
-        try:
-            valid_data = address_schema.load(data, partial=True) # Allow partial data
-        except ValidationError as e:
-            return {'message': str(e)}, 400
-        except Exception as e:
-            return {'message': str(e)}, 500
         
         # Update the address
         try:
-            AddressService.update_address(address_id, valid_data)
+            AddressService.update_address(address_id, data)
         except ValidationError as e:
             return {'message': str(e)}, 400
         except Exception as e:

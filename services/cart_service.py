@@ -1,6 +1,13 @@
 from marshmallow import ValidationError
 from models import Cart, CartProduct, Product
 from flask_jwt_extended import get_jwt_identity
+from schemas import CartSchema, CartProductSchema, ProductSchema, ProductCartProductCombinedSchema
+
+# Define the schema instances
+cart_schema = CartSchema()
+cart_product_schema = CartProductSchema()
+product_schema = ProductSchema()
+product_cart_product_combined_schema = ProductCartProductCombinedSchema()
 
 # Services
 class CartService:
@@ -30,10 +37,17 @@ class CartService:
                 'product': product
             })
 
+        # Serialize the products array
+        products = product_cart_product_combined_schema.dump(products, many=True)
+
         return products
     
     @staticmethod
     def add_product_to_cart(product_id):
+        # Check if the product id is provided
+        if not product_id:
+            raise ValidationError('No product id provided')
+
         user = get_jwt_identity()
 
         # Check if the user exists
@@ -72,6 +86,10 @@ class CartService:
     
     @staticmethod
     def delete_product_from_cart(cart_product_id):
+        # Check if the cart product id is provided
+        if not cart_product_id:
+            raise ValidationError('No cart product id provided')
+
         cart_product = CartProduct.query.get(cart_product_id)
 
         # Check if the cart product exists

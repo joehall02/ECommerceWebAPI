@@ -2,14 +2,8 @@ from marshmallow import ValidationError
 from flask import request
 from flask_restx import Namespace, Resource, fields, marshal
 from flask_jwt_extended import jwt_required
-from schemas import ProductSchema, ProductImageSchema, FeaturedProductSchema
 from decorators import admin_required
 from services.product_service import ProductService, FeaturedProductService, ProductImageService
-
-# Define the schema instances
-product_schema = ProductSchema()
-featured_product_schema = FeaturedProductSchema()
-product_image_schema = ProductImageSchema()
 
 # Define the namespace for the product routes
 product_ns = Namespace('product', description='Product operations')
@@ -45,13 +39,6 @@ class ProductResource(Resource):
         except Exception as e:
             return {'error': str(e)}, 500
         
-        try:
-            products = product_schema.dump(products, many=True) # Serialize the products
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
-        
         return marshal(products, product_model), 200
         
 @product_ns.route('/<int:product_id>', methods=['GET'])
@@ -61,14 +48,6 @@ class ProductResource(Resource):
         # Get the product
         try:
             product = ProductService.get_product(product_id)
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
-        
-        # Serialize the product
-        try:
-            product = product_schema.dump(product) # Serialize the product
         except ValidationError as e:
             return {'error': str(e)}, 400
         except Exception as e:
@@ -88,14 +67,6 @@ class FeaturedProductResource(Resource):
         except Exception as e:
             return {'error': str(e)}, 500
         
-        # Serialise the featured products
-        try:
-            featured_products = product_schema.dump(featured_products, many=True) # Serialize the featured products using the product schema
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
-        
         return marshal(featured_products, product_model), 200 # return product_model
 
 @product_ns.route('/featured-product/<int:featured_product_id>', methods=['GET'])
@@ -104,14 +75,6 @@ class FeaturedProductResource(Resource):
     def get(self, featured_product_id): # Get a single featured product
         try:
             featured_product = FeaturedProductService.get_featured_product(featured_product_id)
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
-        
-        # Serialize the featured product
-        try:
-            featured_product = product_schema.dump(featured_product) # Serialize the featured product using the product schema
         except ValidationError as e:
             return {'error': str(e)}, 400
         except Exception as e:
@@ -129,14 +92,7 @@ class ProductImageResource(Resource):
             return {'error': str(e)}, 400
         except Exception as e:
             return {'error': str(e)}, 500
-        
-        try:
-            product_images = product_image_schema.dump(product_images, many=True) # Serialize the product images
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
-        
+
         return marshal(product_images, product_image_model), 200
 
 @product_ns.route('/admin', methods=['POST'])
@@ -145,18 +101,10 @@ class AdminProductResource(Resource):
     @admin_required()
     def post(self): # Create a new product
         data = request.get_json()
-
-        # Validate the request data
-        try:
-            valid_data = product_schema.load(data)
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
         
         # Create a new product
         try:
-            ProductService.create_product(valid_data)
+            ProductService.create_product(data)
         except ValidationError as e:
             return {'error': str(e)}, 400
         except Exception as e:
@@ -170,18 +118,10 @@ class AdminProductResource(Resource):
     @admin_required()
     def put(self, product_id): # Edit a product
         data = request.get_json()
-
-        # Validate the request data
-        try:
-            valid_data = product_schema.load(data, partial=True) # Allow partial product schema
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
         
         # Update the product
         try:
-            ProductService.update_product(valid_data, product_id)
+            ProductService.update_product(data, product_id)
         except ValidationError as e:
             return {'error': str(e)}, 400
         except Exception as e:
@@ -257,42 +197,16 @@ class AdminProductImageResource(Resource):
             return {'error': str(e)}, 400
         except Exception as e:
             return {'error': str(e)}, 500
-
-        # Validate the request data
-        try:
-            valid_data = product_image_schema.load(new_data)
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
         
         # Create a new product image
         try:
-            ProductImageService.create_product_image(valid_data)
+            ProductImageService.create_product_image(new_data)
         except ValidationError as e:
             return {'error': str(e)}, 400
         except Exception as e:
             return {'error': str(e)}, 500
         
         return {'message': 'Product image created successfully'}, 201
-
-    @jwt_required()
-    def get(self, product_id):
-        try:
-            product_images = ProductImageService.get_all_product_images(product_id)
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
-        
-        try:
-            product_images = product_image_schema.dump(product_images, many=True) # Serialize the product images
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
-        
-        return marshal(product_images, product_image_model), 200
 
 @product_ns.route('/admin/product-image/<int:product_image_id>', methods=['DELETE'])
 class AdminProductImageResource(Resource):

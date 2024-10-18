@@ -2,13 +2,8 @@ from marshmallow import ValidationError
 from flask import request
 from flask_restx import Namespace, Resource, fields, marshal
 from flask_jwt_extended import jwt_required
-from schemas import CategorySchema, ProductSchema
 from decorators import admin_required
 from services.category_service import CategoryService
-
-# Define the schema instances
-category_schema = CategorySchema()
-product_schema = ProductSchema()
     
 # Define the namespace
 category_ns = Namespace('category', description='Category operations')
@@ -34,13 +29,8 @@ class CategoryResource(Resource):
     def get(self): # Get all categories       
         try:            
             categories = CategoryService.get_categories()
-        except Exception as e:
-            return {'error': str(e)}, 500
-        
-        try:
-            categories = category_schema.dump(categories, many=True) # Serialize the categories, .dump() is used to serialize the data. many=True because it's a list, not a single object. 
         except ValidationError as e:
-            return {'error': str(e)}, 500
+            return {'error': str(e)}, 400
         except Exception as e:
             return {'error': str(e)}, 500
 
@@ -57,15 +47,7 @@ class CategoryResource(Resource):
             return {'error': str(e)}, 400
         except Exception as e:
             return {'error': str(e)}, 500
-        
-        # Serialize the products
-        try:
-            products = product_schema.dump(products, many=True) # Serialize the products
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500                
-        
+                         
         return marshal(products, product_model), 200
 
 @category_ns.route('/admin', methods=['POST'])
@@ -74,18 +56,10 @@ class AdminCategoryResource(Resource):
     @admin_required()
     def post(self): # Create new category
         data = request.get_json()
-
-        # Validate the request data
-        try:
-            valid_data = category_schema.load(data)
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
         
         # Create a new category
         try:
-            CategoryService.create_category(valid_data)
+            CategoryService.create_category(data)
         except ValidationError as e:
             return {'error': str(e)}, 400
         except Exception as e:
@@ -99,18 +73,10 @@ class AdminCategoryResource(Resource):
     @admin_required()
     def put(self, category_id): # Edit category
         data = request.get_json()
-
-        # Validate the request data
-        try:
-            valid_data = category_schema.load(data, partial=True) # Allow partial category schema
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
         
         # Update the category
         try:
-            CategoryService.update_category(valid_data, category_id)
+            CategoryService.update_category(data, category_id)
         except ValidationError as e:
             return {'error': str(e)}, 400
         except Exception as e: 

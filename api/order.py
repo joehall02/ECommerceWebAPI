@@ -2,14 +2,8 @@ from marshmallow import ValidationError
 from flask import request
 from flask_restx import Namespace, Resource, fields, marshal
 from flask_jwt_extended import jwt_required
-from schemas import OrderSchema, OrderItemSchema, OrderItemCombinedSchema
 from decorators import admin_required
 from services.order_service import OrderService
-
-# Define the schema instances
-order_schema = OrderSchema()
-order_item_schema = OrderItemSchema()
-order_item_combined_schema = OrderItemCombinedSchema()
 
 order_ns = Namespace('order', description='Administrator operations')
 
@@ -48,30 +42,15 @@ class OrderResource(Resource):
         except Exception as e:
             return {'error': str(e)}, 500
         
-        try:
-            orders = order_schema.dump(orders, many=True) # Serialize the data
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
-        
         return marshal(orders, order_model), 200
 
     @jwt_required()
     def post(self): # Create an order and order items
         data = request.get_json()
-
-        # Validate the data
-        try:
-            valid_data = order_schema.load(data, partial=True) # Partial allows for missing fields
-        except ValidationError as e:
-            return {'message': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
         
         # Create the order and order items
         try:
-            OrderService.create_order(valid_data)
+            OrderService.create_order(data)
         except ValidationError as e:
             return {'message': str(e)}, 400
         except Exception as e:
@@ -90,13 +69,6 @@ class OrderResource(Resource):
         except Exception as e:
             return {'error': str(e)}, 500
         
-        try:
-            order = order_item_combined_schema.dump(order)
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
-        
         return marshal(order, combined_model), 200
 
 @order_ns.route('/admin', methods=['GET'])
@@ -109,14 +81,7 @@ class AdminOrderResource(Resource):
         except ValidationError as e:
             return {'error': str(e)}, 400
         except Exception as e:
-            return {'error': str(e)}, 500
-        
-        try:
-            orders = order_schema.dump(orders, many=True)
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
+            return {'error': str(e)}, 500    
         
         return marshal(orders, order_model), 200
 
@@ -128,14 +93,7 @@ class AdminOrderResource(Resource):
         data = request.get_json()
 
         try:
-            valid_data = order_schema.load(data, partial=True)
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
-        
-        try:
-            OrderService.update_order_status(valid_data, order_id)
+            OrderService.update_order_status(data, order_id)
         except ValidationError as e:
             return {'error': str(e)}, 400
         except Exception as e:

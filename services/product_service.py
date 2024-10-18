@@ -4,10 +4,16 @@ from models import Product, Category, FeaturedProduct, ProductImage
 from werkzeug.utils import secure_filename
 from google.cloud import storage
 from dotenv import load_dotenv
+from schemas import ProductSchema, ProductImageSchema, FeaturedProductSchema
 import os
 
 # Load environment variables
 load_dotenv()
+
+# Define the schema instances
+product_schema = ProductSchema()
+featured_product_schema = FeaturedProductSchema()
+product_image_schema = ProductImageSchema()
 
 # Check if the file is an image
 def allowed_file(filename):
@@ -69,6 +75,13 @@ def remove_image_from_google_cloud_storage(image_path):
 class ProductService:
     @staticmethod
     def create_product(data):
+        # Check if data is provided
+        if not data:
+            raise ValidationError('No data provided')
+
+        # Validate the request data using the schema
+        valid_data = product_schema.load(data)
+
         category = Category.query.get(data['category_id'])
 
         # Check category exists
@@ -76,11 +89,11 @@ class ProductService:
             raise ValidationError('Category not found')
 
         new_product = Product(
-            name = data['name'],
-            description = data['description'],
-            price = data['price'],
-            stock = data['stock'],
-            category_id = data['category_id']
+            name = valid_data['name'],
+            description = valid_data['description'],
+            price = valid_data['price'],
+            stock = valid_data['stock'],
+            category_id = valid_data['category_id']
         )
 
         new_product.save()
@@ -94,21 +107,42 @@ class ProductService:
         # Check if there are any products
         if not products:
             raise ValidationError('No products found')
+        
+        # Serialize the data
+        products = product_schema.dump(products, many=True)
 
         return products
     
     @staticmethod
     def get_product(product_id):
+        # Check if the product id is provided
+        if not product_id:
+            raise ValidationError('No product id provided')
+
         product = Product.query.get(product_id)
 
         # Check if the product exists
         if not product:
             raise ValidationError('Product not found')
 
+        # Serialize the data
+        product = product_schema.dump(product)
+
         return product
 
     @staticmethod
     def update_product(data, product_id):
+        # Check if the product id is provided
+        if not product_id:
+            raise ValidationError('No product id provided')
+        
+        # Check if data is provided
+        if not data:
+            raise ValidationError('No data provided')
+
+        # Validate the request data using the schema
+        valid_data = product_schema.load(data, partial=True)
+
         product = Product.query.get(product_id)
 
         # Check if the product exists
@@ -116,18 +150,18 @@ class ProductService:
             raise ValidationError('Product not found')
         
         # Check if data is empty
-        if not data:
+        if not valid_data:
             raise ValidationError('No data provided')
         
         # Check if the category exists
-        if 'category_id' in data:
-            category = Category.query.get(data['category_id'])
+        if 'category_id' in valid_data:
+            category = Category.query.get(valid_data['category_id'])
             if not category:
                 raise ValidationError('Category not found')
         
         # Update product details
         # Loop through the data and update the product attributes using the key-value pairs in the data
-        for key, value in data.items():
+        for key, value in valid_data.items():
             setattr(product, key, value) 
 
         product.save()
@@ -137,6 +171,10 @@ class ProductService:
 
     @staticmethod
     def delete_product(product_id):
+        # Check if the product id is provided
+        if not product_id:
+            raise ValidationError('No product id provided')
+
         product = Product.query.get(product_id)
 
         # Check if the product exists
@@ -150,6 +188,10 @@ class ProductService:
 class FeaturedProductService:
     @staticmethod
     def add_featured_product(product_id):
+        # Check if the product id is provided
+        if not product_id:
+            raise ValidationError('No product id provided')
+
         product = Product.query.get(product_id)
 
         # Check if the product exists
@@ -182,10 +224,17 @@ class FeaturedProductService:
         # List comprehension to add all products associated with each featured product to a list, similar to a for loop
         products = [featured_product.product for featured_product in featured_products] 
 
+        # Serialize the data
+        featured_products = product_schema.dump(featured_products, many=True)
+
         return products
     
     @staticmethod
     def get_featured_product(featured_product_id):
+        # Check if the featured product id is provided
+        if not featured_product_id:
+            raise ValidationError('No featured product id provided')
+
         featured_product = FeaturedProduct.query.get(featured_product_id)
 
         # Check if the featured product exists
@@ -199,10 +248,17 @@ class FeaturedProductService:
         if not product:
             raise ValidationError('Product not found')
         
+        # Serialize the data
+        featured_product = product_schema.dump(featured_product)
+        
         return product
     
     @staticmethod
     def delete_featured_product(featured_product_id):
+        # Check if the featured product id is provided
+        if not featured_product_id:
+            raise ValidationError('No featured product id provided')
+
         featured_product = FeaturedProduct.query.get(featured_product_id)
 
         # Check if the featured product exists
@@ -215,6 +271,9 @@ class FeaturedProductService:
     
 class ProductImageService:
     def upload_product_image(image_file, product_id):
+        # Check if the product id is provided
+        if not product_id:
+            raise ValidationError('No product id provided')
         
         # Ensure the image file is not empty
         if not image_file:
@@ -239,15 +298,22 @@ class ProductImageService:
         return image_path    
 
     def create_product_image(data):
-        product = Product.query.get(data['product_id'])
+        # Check if data is provided
+        if not data:
+            raise ValidationError('No data provided')
+
+        # Validate the request data using the schema
+        valid_data = product_image_schema.load(data)
+
+        product = Product.query.get(valid_data['product_id'])
 
         # Check if the product exists
         if not product:
             raise ValidationError('Product not found')
         
         new_product_image = ProductImage(
-            image_path = data['image_path'],
-            product_id = data['product_id']
+            image_path = valid_data['image_path'],
+            product_id = valid_data['product_id']
         )
 
         new_product_image.save()
@@ -255,6 +321,10 @@ class ProductImageService:
         return new_product_image
 
     def get_all_product_images(product_id):
+        # Check if the product id is provided
+        if not product_id:
+            raise ValidationError('No product id provided')
+
         product = Product.query.get(product_id)
 
         # Check if the product exists
@@ -267,9 +337,16 @@ class ProductImageService:
         if not product_images:
             raise ValidationError('No product images found')
         
+        # Serialize the data
+        product_images = product_image_schema.dump(product_images, many=True)
+        
         return product_images
 
     def delete_product_image(product_image_id):
+        # Check if the product image id is provided
+        if not product_image_id:
+            raise ValidationError('No product image id provided')
+
         product_image = ProductImage.query.get(product_image_id)
 
         # Check if the product image exists

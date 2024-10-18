@@ -3,12 +3,7 @@ from models import User
 from flask import current_app, request
 from flask_restx import Namespace, Resource, fields
 from marshmallow import ValidationError
-from schemas import SignupSchema, LoginSchema
-from services.user_service import UserService
-
-# Define the schema instances
-signup_schema = SignupSchema()
-login_schema = LoginSchema()        
+from services.user_service import UserService    
 
 user_ns = Namespace('user', description='User operations')
 
@@ -29,20 +24,12 @@ login_model = user_ns.model('Login', {
 
 @user_ns.route('/signup', methods=['POST'])
 class SignupResource(Resource):
-    def post(self):
+    def post(self): # Create a new user account
         data = request.get_json()
-
-        # Validate the request data against the signup schema
-        try:
-            valid_data = signup_schema.load(data)
-        except ValidationError as e: # Return an error response if the request data is invalid
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
 
         # Create a new user account
         try:
-            UserService.create_user(valid_data)
+            UserService.create_user(data)
         except ValidationError as e:
             return {'error': str(e)}, 400
         except Exception as e:
@@ -52,20 +39,12 @@ class SignupResource(Resource):
 
 @user_ns.route('/login', methods=['POST'])
 class LoginResource(Resource):
-    def post(self):
+    def post(self): # Login a user
         data = request.get_json()
 
-        # Validate the request data against the login schema
-        try:
-            valid_data = login_schema.load(data)
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
-        
         # Login the user
         try:
-            access_token, refresh_token = UserService.login_user(valid_data)
+            access_token, refresh_token = UserService.login_user(data)
         except ValidationError as e:
             return {'error': str(e)}, 400
         except Exception as e:
@@ -76,7 +55,7 @@ class LoginResource(Resource):
 @user_ns.route('/refresh', methods=['POST'])
 class RefreshResource(Resource):
     @jwt_required(refresh=True) # Ensure that the token is a refresh token
-    def post(self):
+    def post(self): # Refresh the access token
         try:
             current_user_id = get_jwt_identity()
             new_access_token = create_access_token(identity=current_user_id, expires_delta=current_app.config['JWT_ACCESS_TOKEN_EXPIRES'])
@@ -86,14 +65,3 @@ class RefreshResource(Resource):
             return {'error': str(e)}, 500
         
         return {'access_token': new_access_token}, 200
-
-@user_ns.route('/test', methods=['GET'])
-class Test(Resource):
-    @jwt_required()
-    def get(self):
-        current_user_id = get_jwt_identity()        
-        current_user = User.query.filter_by(id=current_user_id).first()
-        if not current_user:
-            return {'message': 'User not found'}, 404
-
-        return {'message': 'Token is valid', 'user': current_user.email}, 200

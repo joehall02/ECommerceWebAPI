@@ -2,11 +2,24 @@ from datetime import date
 from marshmallow import ValidationError
 from models import Order, OrderItem, Cart
 from flask_jwt_extended import get_jwt_identity
+from schemas import OrderSchema, OrderItemSchema, OrderItemCombinedSchema
+
+# Define the schema instances
+order_schema = OrderSchema()
+order_item_schema = OrderItemSchema()
+order_item_combined_schema = OrderItemCombinedSchema()
 
 # Services
 class OrderService:
     @staticmethod
     def create_order(data):
+        # Check if data is provided
+        if not data:
+            raise ValidationError('No data provided')
+
+        # Validate the data against the order schema
+        valid_data = order_schema.load(data, partial=True) # Partial allows for missing fields
+
         user = get_jwt_identity()
 
         # Check if the user exists
@@ -29,8 +42,8 @@ class OrderService:
             total_price = 0,
             status = 'Pending',
             user_id = user,
-            address_id = data['address_id'],
-            payment_id = data['payment_id']
+            address_id = valid_data['address_id'],
+            payment_id = valid_data['payment_id']
         )
         new_order.save()
 
@@ -66,10 +79,17 @@ class OrderService:
         if not orders:
             raise ValidationError('No orders found')
         
+        # Serialize the data
+        orders = order_schema.dump(orders, many=True)
+    
         return orders
     
     @staticmethod
     def get_order(order_id):
+        # Check if the order id is provided
+        if not order_id:
+            raise ValidationError('No order id provided')
+
         order = Order.query.get(order_id)
         
         # Check order exists
@@ -82,11 +102,16 @@ class OrderService:
         for order_item in order.order_items:
             order_items.append(order_item)
 
-        # Return the order and order items
-        return {
+        order = {
             'order': order,
             'order_items': order_items
         }
+
+        # Serialize the data
+        order = order_item_combined_schema.dump(order)        
+
+        # Return the order and order items
+        return order
 
     @staticmethod
     def get_all_customer_orders():
@@ -96,10 +121,24 @@ class OrderService:
         if not orders:
             raise ValidationError('No orders found')
         
+        # Serialize the data
+        orders = order_schema.dump(orders, many=True)
+        
         return orders
     
     @staticmethod
     def update_order_status(data, order_id):
+        # Check if the order id is provided
+        if not order_id:
+            raise ValidationError('No order id provided')
+
+        # Check if data is provided
+        if not data:
+            raise ValidationError('No data provided')
+
+        # Validate the data against the order schema
+        valid_data = order_schema.load(data, partial=True)
+
         order = Order.query.get(order_id)
 
         # Check if the order exists
@@ -107,7 +146,7 @@ class OrderService:
             raise ValidationError('Order not found')
 
         # Validate the data
-        order_status = data['status']
+        order_status = valid_data['status']
 
         if order_status not in ['Processing', 'Shipped', 'Delivered']:
             raise ValidationError('Invalid order status')
