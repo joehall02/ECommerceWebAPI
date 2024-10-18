@@ -84,3 +84,24 @@ class UserService:
         refresh_token = create_refresh_token(identity=user.id) # Create a refresh token for the user
         
         return access_token, refresh_token
+    
+    @staticmethod
+    def reset_password(data):
+        # Check if the data is provided
+        if not data:
+            raise ValidationError('No data provided')
+        
+        # Validate the request data against the login schema
+        valid_data = login_schema.load(data)
+
+        user = User.query.filter_by(email=valid_data['email']).first() # Get the user with the provided email
+
+        if not user:
+            raise ValidationError('User not found')
+        
+        # Update the user's password
+        user.password = generate_password_hash(valid_data['password'])
+
+        user.save()
+
+        return user

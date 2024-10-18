@@ -27,6 +27,16 @@ class UserTestCase(BaseTestCase):
 
         # Check if the response is correct
         self.assertEqual(response.status_code, 200)
+
+    def test_reset_password(self):
+        # Reset the user password
+        response = self.client.put('/user/reset-password', json={
+            'email': 'Test_email@testemail.com',
+            'password': 'Test_password1234@!',
+        })
+
+        # Check if the response is correct
+        self.assertEqual(response.status_code, 200)
         
     def test_refresh(self): 
         # Create a new access token

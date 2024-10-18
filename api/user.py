@@ -52,6 +52,21 @@ class LoginResource(Resource):
         
         return {'access_token': access_token, 'refresh_token': refresh_token}, 200
     
+@user_ns.route('/reset-password', methods=['PUT'])
+class ResetPasswordResource(Resource):
+    def put(self):
+        data = request.get_json()
+
+        # Reset the user password
+        try:
+            UserService.reset_password(data)
+        except ValidationError as e:
+            return {'error': str(e)}, 400
+        except Exception as e:
+            return {'error': str(e)}, 500
+        
+        return {'message': 'Password reset successfully'}, 200
+    
 @user_ns.route('/refresh', methods=['POST'])
 class RefreshResource(Resource):
     @jwt_required(refresh=True) # Ensure that the token is a refresh token
