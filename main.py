@@ -4,6 +4,7 @@ from flask_restx import Api
 from config import Development, Test
 from flask_jwt_extended import JWTManager
 from flask_migrate import Migrate, upgrade
+from flask_cors import CORS
 from dotenv import load_dotenv
 from exts import db
 import os
@@ -25,6 +26,9 @@ def create_app(config=Development):
 
     # Initialize the database
     db.init_app(app)
+
+    # Enable CORS
+    CORS(app)
 
     # Initialize the JWT manager
     jwt = JWTManager(app)
