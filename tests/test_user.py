@@ -8,11 +8,9 @@ class UserTestCase(BaseTestCase):
     def test_signup(self):    
         # Send a POST request to the endpoint
         response = self.client.post('/user/signup', json={
-            'first_name': 'Test_first_name',
-            'last_name': 'Test_last_name',
+            'full_name': 'Test_full_name2',
             'email': 'Test_email2@testemail.com',
-            'password': 'Test_password123@!',
-            'phone_number': '07853859124'
+            'password': 'Test_password123@!'            
         })         
 
         # Check if the response is correct

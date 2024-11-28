@@ -20,16 +20,11 @@ class UserService:
         # Validate the request data against the signup schema
         valid_data = signup_schema.load(data)
 
-        email_exists = User.query.filter_by(email=valid_data['email']).first()
-        phone_number_exists = None
-        
-        # Only check for phone number if it exists in the request data
-        if 'phone_number' in valid_data and valid_data['phone_number']:
-            phone_number_exists = User.query.filter_by(phone_number=valid_data['phone_number']).first()
+        email_exists = User.query.filter_by(email=valid_data['email']).first()        
         
         # Check if a user with the provided email or phone number already exists
-        if email_exists or phone_number_exists:
-            raise ValidationError('User with the provided email or phone number already exists')
+        if email_exists:
+            raise ValidationError('User with the provided email already exists')
 
         # Check if there are any users in the database
         user_count = User.query.count()
@@ -49,11 +44,9 @@ class UserService:
 
         # Create a new user account
         new_user = User(
-            first_name=valid_data['first_name'],
-            last_name=valid_data['last_name'],
+            full_name=valid_data['full_name'],
             password=generate_password_hash(valid_data['password']), # Generate a password hash before storing it
-            email=valid_data['email'],
-            phone_number=valid_data.get('phone_number', None), # Safely get the phone number from the request data or default to None
+            email=valid_data['email'],            
             role=role
         )
         new_user.save()

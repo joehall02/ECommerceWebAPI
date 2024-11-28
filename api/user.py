@@ -10,11 +10,10 @@ user_ns = Namespace('user', description='User operations')
 # Define the models for the signup and login used for api
 # documentation, actual validation is done using the schema
 signup_model = user_ns.model('Signup', {
-    'first_name': fields.String(required=True),
-    'last_name': fields.String(required=True),
+    'full_name': fields.String(required=True),
     'email': fields.String(required=True),
     'password': fields.String(required=True),
-    'phone_number': fields.String(required=False),
+    'stripe_customer_id': fields.String(required=False),
 })
 
 login_model = user_ns.model('Login', {

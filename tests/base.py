@@ -16,15 +16,14 @@ class BaseTestCase(TestCase):
 
         # Create the database and tables
         with self.app.app_context():
+            db.drop_all()
             db.create_all()
 
         # Create a test user to be used accross all test cases
         response = self.client.post('user/signup', json={
-            'first_name': 'Test_first_name',
-            'last_name': 'Test_last_name',
+            'full_name': 'Test_full_name',
             'email': 'Test_email@testemail.com',
-            'password': 'Test_password123@!',
-            'phone_number': '07853299124',
+            'password': 'Test_password123@!',            
             "role": "admin"
         })
 
@@ -56,18 +55,17 @@ class BaseTestCase(TestCase):
 
         # Create an address
         self.client.post('/address/', headers={'Authorization': 'Bearer ' + self.access_token}, json={
+            'full_name': 'Test_full_name',
             'address_line_1': 'Test_address_line_1',
             'address_line_2': 'Test_address_line_2',
             'city': 'Test_city',
-            'postcode': 'Test_postcode'
+            'postcode': 'Test_postcode',
+            'is_default': True
         })
 
         # Create a payment method
         self.client.post('/payment/', headers={'Authorization': 'Bearer ' + self.access_token}, json={
-            'card_number': '123456789',
-            'name_on_card': 'Test_name',
-            'expiry_date': '2026-12-12',
-            'security_code': '123'
+            'stripe_payment_id': 'Test_stripe_payment_id'
         })
 
     # Tear down the test client automatically after each test

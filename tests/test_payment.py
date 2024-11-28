@@ -9,10 +9,7 @@ class PaymentTestCase(BaseTestCase):
     def test_create_payment(self):
         # Send a POST request to the endpoint
         response = self.client.post('/payment/', headers={'Authorization': 'Bearer ' + self.access_token}, json={
-            'card_number': '987654321',
-            'name_on_card': 'Test_name',
-            'expiry_date': '2026-12-12',
-            'security_code': '123'
+            'stripe_payment_id': 'Test_stripe_payment_id'
         })
 
         self.assertEqual(response.status_code, 201)

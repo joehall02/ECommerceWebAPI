@@ -1,11 +1,9 @@
 from marshmallow import Schema, fields as ma_fields
 
 class SignupSchema(Schema):
-    first_name = ma_fields.String(required=True, error_messages={'required': 'First name is required', 'null': 'First name cannot be empty'})
-    last_name = ma_fields.String(required=True, error_messages={'required': 'Last name is required', 'null': 'Last name cannot be empty'})
+    full_name = ma_fields.String(required=True, error_messages={'required': 'Full name is required', 'null': 'Full name cannot be empty'})    
     email = ma_fields.Email(required=True, error_messages={'required': 'Email is required', 'null': 'Email cannot be empty'})
-    password = ma_fields.String(required=True, error_messages={'required': 'Password is required', 'null': 'Password cannot be empty'})
-    phone_number = ma_fields.String(required=False, error_messages={'null': 'Phone number cannot be empty'})
+    password = ma_fields.String(required=True, error_messages={'required': 'Password is required', 'null': 'Password cannot be empty'})    
     role = ma_fields.String(required=False, error_messages={'null': 'Role cannot be empty'})
 
 class LoginSchema(Schema):
@@ -67,14 +65,13 @@ class ProductCartProductCombinedSchema(Schema):
     cart_product = ma_fields.Nested(CartProductSchema)
 
 class PaymentSchema(Schema):
-    card_number = ma_fields.Integer(required=True, error_messages={'required': 'Card number is required', 'null': 'Card number cannot be empty'})
-    name_on_card = ma_fields.String(required=True, error_messages={'required': 'Name of card is required', 'null': 'Name of card cannot be empty'})
-    expiry_date = ma_fields.Date(required=True, error_messages={'required': 'Expiry date is required', 'null': 'Expiry date cannot be empty'})
-    security_code = ma_fields.Integer(required=True, error_messages={'required': 'Security code is required', 'null': 'Security code cannot be empty'})
+    stripe_payment_id = ma_fields.String(required=True, error_messages={'required': 'Stripe payment ID is required', 'null': 'Stripe payment ID cannot be empty'})
 
 class AddressSchema(Schema):
+    full_name = ma_fields.String(required=True, error_messages={'required': 'Full name is required', 'null': 'Full name cannot be empty'})
     address_line_1 = ma_fields.String(required=True, error_messages={'required': 'Address line 1 is required', 'null': 'Address line 1 cannot be empty'})
     address_line_2 = ma_fields.String(required=False, error_messages={'null': 'Address line 2 cannot be empty'})
     city = ma_fields.String(required=True, error_messages={'required': 'City is required', 'null': 'City cannot be empty'})
     postcode = ma_fields.String(required=True, error_messages={'required': 'Postcode is required', 'null': 'City cannot be empty'})
+    is_default = ma_fields.Boolean(required=True, error_messages={'required': 'Default status is required', 'null': 'Default status cannot be empty'})
     

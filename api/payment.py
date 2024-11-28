@@ -10,10 +10,7 @@ payment_ns = Namespace('payment', description='Payment operations')
 # Define the models used for api documentation,
 # actual validation is done using the schema
 payment_model = payment_ns.model('Payment', {
-    'card_number': fields.Integer(required=True),
-    'name_on_card': fields.String(required=True),
-    'expiry_date': fields.Date(required=True),
-    'security_code': fields.String(required=True),
+    'stripe_payment_id': fields.String(required=True),
 })
 
 # Define the routes

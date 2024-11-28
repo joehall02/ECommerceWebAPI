@@ -24,10 +24,12 @@ class AddressService:
             raise ValidationError('User not found')
         
         new_address = Address(
+            full_name = valid_data['full_name'],
             address_line_1 = valid_data['address_line_1'],
             address_line_2 = valid_data.get('address_line_2', None), # Safely get the address line 2 from the request data or default to None
             city = valid_data['city'],
             postcode = valid_data['postcode'],
+            is_default = valid_data['is_default'],
             user_id = user
         )
 

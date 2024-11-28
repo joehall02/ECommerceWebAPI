@@ -3,11 +3,10 @@ from exts import db
 class User(db.Model):
     __tablename__ = 'User'
     id = db.Column(db.Integer, primary_key=True)
-    first_name = db.Column(db.String(100), nullable=False)
-    last_name = db.Column(db.String(100), nullable=False)
+    full_name = db.Column(db.String(100), nullable=False)    
     email = db.Column(db.String(100), nullable=False, unique=True) # unique=True ensures that no two users can have the same email
-    password = db.Column(db.String(300), nullable=False)
-    phone_number = db.Column(db.String(100), nullable=True) # nullable=True allows for the phone number to be empty
+    password = db.Column(db.String(300), nullable=False)    
+    stripe_customer_id = db.Column(db.String(50), nullable=True)
     role = db.Column(db.String(50), nullable=False)
 
     # Relationships
@@ -17,7 +16,7 @@ class User(db.Model):
     orders = db.relationship('Order', backref='user', lazy=True)
 
     def __repr__(self):
-        return f'<User {self.id} {self.first_name}>'
+        return f'<User {self.id} {self.full_name}>'
     
     def save(self):
         db.session.add(self)
@@ -30,10 +29,12 @@ class User(db.Model):
 class Address(db.Model):
     __tablename__ = 'Address'
     id = db.Column(db.Integer, primary_key=True)
+    full_name = db.Column(db.String(100), nullable=False)
     address_line_1 = db.Column(db.String(100), nullable=False)
     address_line_2 = db.Column(db.String(100), nullable=True)
     city = db.Column(db.String(100), nullable=False)
     postcode = db.Column(db.String(20), nullable=False)
+    is_default = db.Column(db.Boolean, nullable=False)
 
     # Foreign key
     user_id = db.Column(db.Integer, db.ForeignKey('User.id'), nullable=False)
@@ -52,10 +53,7 @@ class Address(db.Model):
 class Payment(db.Model):
     __tablename__ = 'Payment'
     id = db.Column(db.Integer, primary_key=True)
-    card_number = db.Column(db.Integer, nullable=False)
-    name_on_card = db.Column(db.String(100), nullable=False)
-    expiry_date = db.Column(db.Date, nullable=False)
-    security_code = db.Column(db.Integer, nullable=False)
+    stripe_payment_id = db.Column(db.String(50), nullable=False)
 
     # Foreign key
     user_id = db.Column(db.Integer, db.ForeignKey('User.id', ondelete='CASCADE'), nullable=False) # ondelete='CASCADE' ensures that when a user is deleted, their payment details are also deleted

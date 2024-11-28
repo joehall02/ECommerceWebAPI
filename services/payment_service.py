@@ -25,10 +25,7 @@ class PaymentService:
             raise ValidationError('User not found')
 
         new_payment = Payment(
-            card_number = valid_data['card_number'],
-            name_on_card = valid_data['name_on_card'],
-            expiry_date = valid_data['expiry_date'],
-            security_code = valid_data['security_code'],
+            stripe_payment_id = valid_data['stripe_payment_id'],
             user_id = user
         )
         new_payment.save()
