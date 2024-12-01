@@ -1,6 +1,6 @@
 from flask_jwt_extended import create_access_token, create_refresh_token
 from models import User, Cart
-from flask import current_app
+from flask import current_app, make_response, jsonify
 from marshmallow import ValidationError
 from schemas import SignupSchema, LoginSchema
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -76,7 +76,15 @@ class UserService:
         access_token = create_access_token(identity=user.id, expires_delta=current_app.config['JWT_ACCESS_TOKEN_EXPIRES']) # Create an access token for the user with a 1 hour expiry
         refresh_token = create_refresh_token(identity=user.id) # Create a refresh token for the user
         
-        return access_token, refresh_token
+        # Create a response
+        response = make_response(jsonify({'message': 'Login successful'}))
+
+        # Set HTTP-only cookies for the access and refresh tokens
+        response.set_cookie('access_token', access_token, httponly=True, secure=True, samesite='Lax')
+        response.set_cookie('refresh_token', refresh_token, httponly=True, secure=True, samesite='Lax')
+
+        return response
+
     
     @staticmethod
     def reset_password(data):

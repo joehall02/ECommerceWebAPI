@@ -43,13 +43,13 @@ class LoginResource(Resource):
 
         # Login the user
         try:
-            access_token, refresh_token = UserService.login_user(data)
+            response = UserService.login_user(data)
         except ValidationError as e:
             return {'error': str(e)}, 400
         except Exception as e:
             return {'error': str(e)}, 500
         
-        return {'access_token': access_token, 'refresh_token': refresh_token}, 200
+        return response
     
 @user_ns.route('/reset-password', methods=['PUT'])
 class ResetPasswordResource(Resource):

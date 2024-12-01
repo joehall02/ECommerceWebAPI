@@ -7,7 +7,12 @@ load_dotenv() # Load environment variables from the .env file
 # Configuration class
 class Config:
     SECRET_KEY = os.getenv('SECRET_KEY') # Get the secret key from the environment variables
+    JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY') # Get the JWT secret key from the environment variables
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1) # Set the access token expiry time to 1 hour
+    JWT_TOKEN_LOCATION = ['cookies']
+    JWT_ACCESS_COOKIE_NAME = 'access_token'
+    JWT_REFRESH_COOKIE_NAME = 'refresh_token'
+    JWT_COOKIE_CSRF_PROTECT = True  # Set to True if you want CSRF protection    
 
 # Development configuration class
 class Development(Config):
