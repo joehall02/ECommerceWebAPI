@@ -2,7 +2,7 @@ from marshmallow import ValidationError
 from flask import request
 from flask_restx import Namespace, Resource, fields, marshal
 from flask_jwt_extended import jwt_required
-from decorators import admin_required
+from decorators import admin_required, handle_exceptions
 from services.product_service import ProductService, FeaturedProductService, ProductImageService
 
 # Define the namespace for the product routes
@@ -31,27 +31,18 @@ product_image_model = product_ns.model('ProductImage', {
 @product_ns.route('/', methods=['GET'])
 class ProductResource(Resource):
     @jwt_required()
+    @handle_exceptions
     def get(self): # Get all products
-        try:
-            products = ProductService.get_all_products()
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
+        products = ProductService.get_all_products()        
         
         return marshal(products, product_model), 200
         
 @product_ns.route('/<int:product_id>', methods=['GET'])
 class ProductResource(Resource):
     @jwt_required()
-    def get(self, product_id): # Get a single product
-        # Get the product
-        try:
-            product = ProductService.get_product(product_id)
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
+    @handle_exceptions
+    def get(self, product_id): # Get a single product        
+        product = ProductService.get_product(product_id)        
         
         return marshal(product, product_model), 200
     
@@ -59,39 +50,28 @@ class ProductResource(Resource):
 @product_ns.route('/featured-product', methods=['GET'])
 class FeaturedProductResource(Resource):
     @jwt_required()
+    @handle_exceptions
     def get(self): # Get all featured products        
-        try:
-            featured_products = FeaturedProductService.get_all_featured_products()
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
+        featured_products = FeaturedProductService.get_all_featured_products()
         
         return marshal(featured_products, product_model), 200 # return product_model
 
 @product_ns.route('/featured-product/<int:featured_product_id>', methods=['GET'])
 class FeaturedProductResource(Resource):
     @jwt_required()
+    @handle_exceptions
     def get(self, featured_product_id): # Get a single featured product
-        try:
-            featured_product = FeaturedProductService.get_featured_product(featured_product_id)
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
+        featured_product = FeaturedProductService.get_featured_product(featured_product_id)
         
         return marshal(featured_product, product_model), 200 # return product_model
 
 @product_ns.route('/product-image/<int:product_id>', methods=['GET'])
 class ProductImageResource(Resource):
     @jwt_required()
+    @handle_exceptions
     def get(self, product_id): # Get all product images for a product
-        try:
-            product_images = ProductImageService.get_all_product_images(product_id)
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
+        
+        product_images = ProductImageService.get_all_product_images(product_id)        
 
         return marshal(product_images, product_image_model), 200
 
@@ -99,16 +79,11 @@ class ProductImageResource(Resource):
 class AdminProductResource(Resource):
     @jwt_required()
     @admin_required()
+    @handle_exceptions
     def post(self): # Create a new product
         data = request.get_json()
         
-        # Create a new product
-        try:
-            ProductService.create_product(data)
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
+        ProductService.create_product(data)        
         
         return {'message': 'Product created successfully'}, 201
 
@@ -116,29 +91,19 @@ class AdminProductResource(Resource):
 class AdminProductResource(Resource):
     @jwt_required()
     @admin_required()
+    @handle_exceptions
     def put(self, product_id): # Edit a product
         data = request.get_json()
         
-        # Update the product
-        try:
-            ProductService.update_product(data, product_id)
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
+        ProductService.update_product(data, product_id)        
         
         return {'message': 'Product updated successfully'}, 200
         
     @jwt_required()
     @admin_required()
+    @handle_exceptions
     def delete(self, product_id): # Delete a product
-        # Delete the product
-        try:
-            ProductService.delete_product(product_id)
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
+        ProductService.delete_product(product_id)        
         
         return {'message': 'Product deleted successfully'}, 200
     
@@ -146,15 +111,9 @@ class AdminProductResource(Resource):
 class AdminFeaturedProduct(Resource):
     @jwt_required()
     @admin_required()
-    def post(self, product_id): # Add a product to the featured products        
-
-        # Create a new featured product
-        try:
-            FeaturedProductService.add_featured_product(product_id)
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
+    @handle_exceptions
+    def post(self, product_id): # Add a product to the featured products                
+        FeaturedProductService.add_featured_product(product_id)
         
         return {'message': 'Product added to featured products successfully'}, 201
 
@@ -162,14 +121,9 @@ class AdminFeaturedProduct(Resource):
 class AdminFeaturedProduct(Resource):
     @jwt_required()
     @admin_required()
-    def delete(self, featured_product_id): # Remove a product from the featured products
-        print('featured_product_id', featured_product_id)
-        try:
-            FeaturedProductService.delete_featured_product(featured_product_id)
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
+    @handle_exceptions
+    def delete(self, featured_product_id): # Remove a product from the featured products        
+        FeaturedProductService.delete_featured_product(featured_product_id)        
         
         return {'message': 'Product removed from featured products successfully'}, 200
 
@@ -212,12 +166,8 @@ class AdminProductImageResource(Resource):
 class AdminProductImageResource(Resource):
     @jwt_required()
     @admin_required()
-    def delete(self, product_image_id): # Delete a product image for a product
-        try:
-            ProductImageService.delete_product_image(product_image_id)
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
+    @handle_exceptions
+    def delete(self, product_image_id): # Delete a product image for a product        
+        ProductImageService.delete_product_image(product_image_id)        
         
         return {'message': 'Product image deleted successfully'}, 200

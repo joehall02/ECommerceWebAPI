@@ -3,6 +3,7 @@ from marshmallow import ValidationError
 from flask_restx import Namespace, Resource, fields, marshal
 from flask_jwt_extended import jwt_required
 from services.address_service import AddressService
+from decorators import handle_exceptions
 
 # Create a namespace
 address_ns = Namespace('address', description='Address related operations')
@@ -22,65 +23,43 @@ address_model = address_ns.model('Address', {
 @address_ns.route('/', methods=['POST', 'GET'])
 class AddressResource(Resource):
     @jwt_required()
-    def get(self): # Get all addresses for a user
-        try:
-            addresses = AddressService.get_all_addresses()
-        except ValidationError as e:
-            return {'message': str(e)}, 400
-        except Exception as e:
-            return {'message': str(e)}, 500                
+    @handle_exceptions
+    def get(self): # Get all addresses for a user        
+        addresses = AddressService.get_all_addresses()     
         
         return marshal(addresses, address_model), 200
 
     @jwt_required()
+    @handle_exceptions
     def post(self): # Create a new address
         data = request.get_json()
-        
-        # Create a new address
-        try:
-            AddressService.create_address(data)
-        except ValidationError as e:
-            return {'message': str(e)}, 400
-        except Exception as e:
-            return {'message': str(e)}, 500
+
+        AddressService.create_address(data)        
         
         return {'message': 'Address created successfully'}, 201
 
 @address_ns.route('/<int:address_id>', methods=['GET', 'PUT', 'DELETE'])
 class AddressDetailResource(Resource):
     @jwt_required()
-    def get(self, address_id): # Get a single address
-        try:
-            address = AddressService.get_address(address_id)
-        except ValidationError as e:
-            return {'message': str(e)}, 400
-        except Exception as e:
-            return {'message': str(e)}, 500
+    @handle_exceptions
+    def get(self, address_id): # Get a single address        
+        address = AddressService.get_address(address_id)        
         
         return marshal(address, address_model), 200
 
     @jwt_required()
+    @handle_exceptions
     def put(self, address_id): # Update a single address
         data = request.get_json()
-        
-        # Update the address
-        try:
-            AddressService.update_address(address_id, data)
-        except ValidationError as e:
-            return {'message': str(e)}, 400
-        except Exception as e:
-            return {'message': str(e)}, 500
+                
+        AddressService.update_address(address_id, data)        
         
         return {'message': 'Address updated successfully'}, 200
 
 
     @jwt_required() 
-    def delete(self, address_id): # Delete a single address
-        try:
-            AddressService.delete_address(address_id)
-        except ValidationError as e:
-            return {'message': str(e)}, 400
-        except Exception as e:
-            return {'message': str(e)}, 500
+    @handle_exceptions
+    def delete(self, address_id): # Delete a single address        
+        AddressService.delete_address(address_id)        
         
         return {'message': 'Address deleted successfully'}, 200

@@ -6,7 +6,9 @@ class CartTestCase(BaseTestCase):
         super().setUp() # Call the setUp() method of the BaseTestCase class
 
         # Create another product
-        self.client.post('/product/admin', headers={'Authorization': 'Bearer ' + self.access_token}, json={
+        self.client.post('/product/admin', headers={
+            'X-CSRF-TOKEN': self.csrf_token
+        }, json={
             'name': 'Product_test2',
             'description': 'Product_description2',
             'stock': 5,
@@ -15,25 +17,33 @@ class CartTestCase(BaseTestCase):
         })
 
         # Add the product to the cart
-        self.client.post('/cart/1', headers={'Authorization': 'Bearer ' + self.access_token})
+        self.client.post('/cart/1', headers={
+            'X-CSRF-TOKEN': self.csrf_token
+        })
 
     def test_add_product_to_cart(self):
         # Send a POST request to the endpoint
-        response = self.client.post('/cart/2', headers={'Authorization': 'Bearer ' + self.access_token})
+        response = self.client.post('/cart/2', headers={
+            'X-CSRF-TOKEN': self.csrf_token
+        })
 
         # Check if the response is correct
         self.assertEqual(response.status_code, 201)
 
     def test_get_all_products_in_cart(self):
         # Send a GET request to the endpoint
-        response = self.client.get('/cart/', headers={'Authorization': 'Bearer ' + self.access_token})
+        response = self.client.get('/cart/', headers={
+            'X-CSRF-TOKEN': self.csrf_token
+        })
 
         # Check if the response is correct
         self.assertEqual(response.status_code, 200)
 
     def test_delete_product_from_cart(self):
         # Send a DELETE request to the endpoint
-        response = self.client.delete('/cart/1', headers={'Authorization': 'Bearer ' + self.access_token})
+        response = self.client.delete('/cart/1', headers={
+            'X-CSRF-TOKEN': self.csrf_token
+        })
 
         # Check if the response is correct
         self.assertEqual(response.status_code, 200)

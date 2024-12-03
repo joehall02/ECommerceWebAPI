@@ -4,6 +4,7 @@ from flask_restx import Namespace, Resource, fields, marshal
 from flask_jwt_extended import jwt_required
 from decorators import admin_required
 from services.category_service import CategoryService
+from decorators import handle_exceptions
     
 # Define the namespace
 category_ns = Namespace('category', description='Category operations')
@@ -26,27 +27,18 @@ product_model = category_ns.model('Product', {
 @category_ns.route('/', methods=['GET'])
 class CategoryResource(Resource):
     @jwt_required()
-    def get(self): # Get all categories       
-        try:            
-            categories = CategoryService.get_categories()
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
+    @handle_exceptions
+    def get(self): # Get all categories                 
+        categories = CategoryService.get_categories()        
 
         return marshal(categories, category_model), 200
 
 @category_ns.route('/<int:category_id>', methods=['GET'])
 class CategoryResource(Resource):
     @jwt_required()
-    def get(self, category_id): # Get all products in a category
-        # Get all products in the category
-        try:
-            products = CategoryService.get_all_products_in_category(category_id)                    
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
+    @handle_exceptions
+    def get(self, category_id): # Get all products in a category        
+        products = CategoryService.get_all_products_in_category(category_id)                        
                          
         return marshal(products, product_model), 200
 
@@ -54,16 +46,11 @@ class CategoryResource(Resource):
 class AdminCategoryResource(Resource):
     @jwt_required()
     @admin_required()
+    @handle_exceptions
     def post(self): # Create new category
         data = request.get_json()
-        
-        # Create a new category
-        try:
-            CategoryService.create_category(data)
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
+                
+        CategoryService.create_category(data)        
         
         return {'message': 'Category created successfully'}, 201
     
@@ -71,28 +58,18 @@ class AdminCategoryResource(Resource):
 class AdminCategoryResource(Resource):
     @jwt_required()
     @admin_required()
+    @handle_exceptions
     def put(self, category_id): # Edit category
         data = request.get_json()
-        
-        # Update the category
-        try:
-            CategoryService.update_category(data, category_id)
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e: 
-            return {'error': str(e)}, 500
+                
+        CategoryService.update_category(data, category_id)        
         
         return {'message': 'Category updated successfully'}, 200
 
     @jwt_required()
     @admin_required()
-    def delete(self, category_id): # Delete a category      
-        # Delete the category
-        try:
-            CategoryService.delete_category(category_id)
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
+    @handle_exceptions
+    def delete(self, category_id): # Delete a category              
+        CategoryService.delete_category(category_id)        
         
         return {'message': 'Category deleted successfully'}, 200

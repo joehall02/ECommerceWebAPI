@@ -4,6 +4,7 @@ from flask_restx import Namespace, Resource, fields, marshal
 from flask_jwt_extended import jwt_required
 from decorators import admin_required
 from services.order_service import OrderService
+from decorators import handle_exceptions
 
 order_ns = Namespace('order', description='Administrator operations')
 
@@ -34,40 +35,27 @@ combined_model = order_ns.model('Combined', {
 @order_ns.route('/', methods=['POST', 'GET'])
 class OrderResource(Resource):
     @jwt_required()
-    def get(self): # Get all orders
-        try:
-            orders = OrderService.get_all_orders()
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
+    @handle_exceptions
+    def get(self): # Get all orders        
+        orders = OrderService.get_all_orders()        
         
         return marshal(orders, order_model), 200
 
     @jwt_required()
+    @handle_exceptions
     def post(self): # Create an order and order items
         data = request.get_json()
-        
-        # Create the order and order items
-        try:
-            OrderService.create_order(data)
-        except ValidationError as e:
-            return {'message': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
+                
+        OrderService.create_order(data)
             
         return {'message': 'Order created successfully'}, 201
 
 @order_ns.route('/<int:order_id>', methods=['GET'])
 class OrderResource(Resource):
     @jwt_required()
-    def get(self, order_id): # Get an order and its order items
-        try:
-            order = OrderService.get_order(order_id)
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
+    @handle_exceptions
+    def get(self, order_id): # Get an order and its order items        
+        order = OrderService.get_order(order_id)        
         
         return marshal(order, combined_model), 200
 
@@ -75,13 +63,9 @@ class OrderResource(Resource):
 class AdminOrderResource(Resource):
     @jwt_required()
     @admin_required()
-    def get(self): # Get all customer orders
-        try:
-            orders = OrderService.get_all_customer_orders()
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500    
+    @handle_exceptions
+    def get(self): # Get all customer orders        
+        orders = OrderService.get_all_customer_orders()        
         
         return marshal(orders, order_model), 200
 
@@ -89,15 +73,11 @@ class AdminOrderResource(Resource):
 class AdminOrderResource(Resource):  
     @jwt_required()
     @admin_required()
+    @handle_exceptions
     def put(self, order_id): # Change the status of a customer order
         data = request.get_json()
-
-        try:
-            OrderService.update_order_status(data, order_id)
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
+        
+        OrderService.update_order_status(data, order_id)        
         
         return {'message': 'Order status updated successfully'}, 200
         

@@ -1,4 +1,4 @@
-from flask_jwt_extended import create_access_token, create_refresh_token
+from flask_jwt_extended import create_access_token, create_refresh_token, set_access_cookies, set_refresh_cookies
 from models import User, Cart
 from flask import current_app, make_response, jsonify
 from marshmallow import ValidationError
@@ -80,8 +80,10 @@ class UserService:
         response = make_response(jsonify({'message': 'Login successful'}))
 
         # Set HTTP-only cookies for the access and refresh tokens
-        response.set_cookie('access_token', access_token, httponly=True, secure=True, samesite='Lax')
-        response.set_cookie('refresh_token', refresh_token, httponly=True, secure=True, samesite='Lax')
+        # response.set_cookie('access_token', access_token, httponly=True, secure=False, samesite='Lax', path='/')
+        # response.set_cookie('refresh_token', refresh_token, httponly=True, secure=False, samesite='Lax', path='/')
+        set_access_cookies(response, access_token)
+        set_refresh_cookies(response, refresh_token)
 
         return response
 

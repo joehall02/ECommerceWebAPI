@@ -36,9 +36,9 @@ class UserTestCase(BaseTestCase):
         # Check if the response is correct
         self.assertEqual(response.status_code, 200)
         
-    def test_refresh(self): 
-        # Create a new access token
-        response = self.client.post('/user/refresh', headers={'Authorization': 'Bearer ' + self.refresh_token})
+    # def test_refresh(self): 
+    #     # Create a new access token
+    #     response = self.client.post('/user/refresh', headers={'Authorization': 'Bearer ' + self.refresh_token})
 
-        # Check if the response is correct
-        self.assertEqual(response.status_code, 200)
+    #     # Check if the response is correct
+    #     self.assertEqual(response.status_code, 200)

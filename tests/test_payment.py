@@ -8,7 +8,9 @@ class PaymentTestCase(BaseTestCase):
     # Payment tests
     def test_create_payment(self):
         # Send a POST request to the endpoint
-        response = self.client.post('/payment/', headers={'Authorization': 'Bearer ' + self.access_token}, json={
+        response = self.client.post('/payment/', headers={
+            'X-CSRF-TOKEN': self.csrf_token
+        }, json={
             'stripe_payment_id': 'Test_stripe_payment_id'
         })
 
@@ -16,21 +18,27 @@ class PaymentTestCase(BaseTestCase):
 
     def test_get_payments(self):
         # Send a GET request to the endpoint
-        response = self.client.get('/payment/', headers={'Authorization': 'Bearer ' + self.access_token})
+        response = self.client.get('/payment/', headers={
+            'X-CSRF-TOKEN': self.csrf_token
+        })
 
         # Check if the response is correct
         self.assertEqual(response.status_code, 200)
 
     def test_get_payment(self):
         # Send a GET request to the endpoint
-        response = self.client.get('/payment/1', headers={'Authorization': 'Bearer ' + self.access_token})
+        response = self.client.get('/payment/1', headers={
+            'X-CSRF-TOKEN': self.csrf_token
+        })
 
         # Check if the response is correct
         self.assertEqual(response.status_code, 200)
 
     def test_delete_payment(self):
         # Send a DELETE request to the endpoint
-        response = self.client.delete('/payment/1', headers={'Authorization': 'Bearer ' + self.access_token})
+        response = self.client.delete('/payment/1', headers={
+            'X-CSRF-TOKEN': self.csrf_token
+        })
 
         # Check if the response is correct
         self.assertEqual(response.status_code, 200)

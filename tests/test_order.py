@@ -7,17 +7,23 @@ class OrderTestCase(BaseTestCase):
         super().setUp() # Call the setUp() method of the BaseTestCase class
 
         # Add a product to the cart
-        self.client.post('/cart/1', headers={'Authorization': 'Bearer ' + self.access_token})
+        self.client.post('/cart/1', headers={
+            'X-CSRF-TOKEN': self.csrf_token
+        })
 
         # Create an order
-        self.client.post('/order/', headers={'Authorization': 'Bearer ' + self.access_token}, json={
+        self.client.post('/order/', headers={
+            'X-CSRF-TOKEN': self.csrf_token
+        }, json={
             'address_id': 1,
             'payment_id': 1
         })
 
     def test_create_order(self):
         # Send a POST request to the endpoint
-        response = self.client.post('/order/', headers={'Authorization': 'Bearer ' + self.access_token}, json={
+        response = self.client.post('/order/', headers={
+            'X-CSRF-TOKEN': self.csrf_token
+        }, json={
             'address_id': 1,
             'payment_id': 1
         })
@@ -26,25 +32,33 @@ class OrderTestCase(BaseTestCase):
 
     def test_get_orders(self):
         # Send a GET request to the endpoint
-        response = self.client.get('/order/', headers={'Authorization': 'Bearer ' + self.access_token})
+        response = self.client.get('/order/', headers={
+            'X-CSRF-TOKEN': self.csrf_token
+        })
 
         self.assertEqual(response.status_code, 200)
 
     def test_get_order(self):
         # Send a GET request to the endpoint
-        response = self.client.get('/order/1', headers={'Authorization': 'Bearer ' + self.access_token})
+        response = self.client.get('/order/1', headers={
+            'X-CSRF-TOKEN': self.csrf_token
+        })
 
         self.assertEqual(response.status_code, 200)
 
     def test_get_customer_orders(self):
         # Send a GET request to the endpoint
-        response = self.client.get('/order/admin', headers={'Authorization': 'Bearer ' + self.access_token})
+        response = self.client.get('/order/admin', headers={
+            'X-CSRF-TOKEN': self.csrf_token
+        })
 
         self.assertEqual(response.status_code, 200)
 
     def test_update_order_status(self):
         # Send a PUT request to the endpoint
-        response = self.client.put('/order/admin/1', headers={'Authorization': 'Bearer ' + self.access_token}, json={
+        response = self.client.put('/order/admin/1', headers={
+            'X-CSRF-TOKEN': self.csrf_token
+        }, json={
             'status': 'Delivered'
         })
 

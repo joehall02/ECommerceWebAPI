@@ -3,6 +3,7 @@ from marshmallow import ValidationError
 from flask_restx import Namespace, Resource, fields, marshal
 from flask_jwt_extended import jwt_required
 from services.payment_service import PaymentService
+from decorators import handle_exceptions
 
 # Define the namespace    
 payment_ns = Namespace('payment', description='Payment operations')
@@ -17,51 +18,33 @@ payment_model = payment_ns.model('Payment', {
 @payment_ns.route('/', methods=['GET', 'POST'])
 class PaymentResource(Resource):
     @jwt_required()
-    def get(self): # Get all payment methods for a user
-        # Get all payment methods for a user
-        try:
-            payments = PaymentService.get_all_payment_methods()
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
+    @handle_exceptions
+    def get(self): # Get all payment methods for a user        
+        payments = PaymentService.get_all_payment_methods()        
 
         return marshal(payments, payment_model), 200
     
     @jwt_required()
+    @handle_exceptions
     def post(self): # Create payment method for a user
         data = request.get_json()
-        
-        # Create a new payment method
-        try:
-            PaymentService.create_payment(data)
-        except ValidationError as e:
-            return {'error': str(e)}, 400  
-        except Exception as e:
-            return {'error': str(e)}, 500
+                
+        PaymentService.create_payment(data)        
         
         return {'message': 'Payment method created successfully'}, 201
     
 @payment_ns.route('/<int:payment_id>', methods=['GET', 'DELETE'])
 class PaymentResource(Resource):
     @jwt_required()
-    def get(self, payment_id): # Get a payment method
-        try:
-            payment = PaymentService.get_payment(payment_id)
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
+    @handle_exceptions
+    def get(self, payment_id): # Get a payment method        
+        payment = PaymentService.get_payment(payment_id)        
 
         return marshal(payment, payment_model), 200
     
     @jwt_required()
-    def delete(self, payment_id): # Delete a payment method
-        try:
-            PaymentService.delete_payment(payment_id)
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
+    @handle_exceptions
+    def delete(self, payment_id): # Delete a payment method        
+        PaymentService.delete_payment(payment_id)        
 
         return {'message': 'Payment method deleted successfully'}, 200

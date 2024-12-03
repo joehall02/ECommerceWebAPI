@@ -2,6 +2,7 @@ from marshmallow import ValidationError
 from flask_restx import Namespace, Resource, fields, marshal
 from flask_jwt_extended import jwt_required
 from services.cart_service import CartService
+from decorators import handle_exceptions
         
 cart_ns = Namespace('cart', description='Cart operations')
 
@@ -34,38 +35,26 @@ combined_model = cart_ns.model('Combined', {
 @cart_ns.route('/', methods=['GET'])
 class CartProductResource(Resource):
     @jwt_required()
-    def get(self): # Get all products in the cart
-        try:
-            products = CartService.get_all_products_in_cart()
-        except ValidationError as e:
-            return {'message': str(e)}, 400
-        except Exception as e:
-            return {'message': str(e)}, 500
+    @handle_exceptions
+    def get(self): # Get all products in the cart        
+        products = CartService.get_all_products_in_cart()        
         
         return marshal(products, combined_model), 200
 
 @cart_ns.route('/<int:cart_product_id>', methods=['DELETE'])
 class CartProductDetailResource(Resource):
     @jwt_required()
-    def delete(self, cart_product_id): # Delete a product from the cart
-        try:
-            CartService.delete_product_from_cart(cart_product_id)
-        except ValidationError as e:
-            return {'message': str(e)}, 400
-        except Exception as e:
-            return {'message': str(e)}, 500
+    @handle_exceptions
+    def delete(self, cart_product_id): # Delete a product from the cart        
+        CartService.delete_product_from_cart(cart_product_id)        
         
         return {'message': 'Product deleted from cart successfully'}, 200
     
 @cart_ns.route('/<int:product_id>', methods=['POST'])
 class CartProductAddResource(Resource):
     @jwt_required()
-    def post(self, product_id): # Add a product to the cart        
-        try:
-            CartService.add_product_to_cart(product_id)
-        except ValidationError as e:
-            return {'message': str(e)}, 400
-        except Exception as e:
-            return {'message': str(e)}, 500
+    @handle_exceptions
+    def post(self, product_id): # Add a product to the cart                
+        CartService.add_product_to_cart(product_id)        
         
         return {'message': 'Product added to cart successfully'}, 201
