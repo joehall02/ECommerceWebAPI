@@ -28,7 +28,7 @@ def create_app(config=Development):
     db.init_app(app)
 
     # Enable CORS
-    CORS(app)
+    CORS(app, supports_credentials=True, origins=['http://localhost:3000'])
 
     # Initialize the JWT manager
     jwt = JWTManager(app)

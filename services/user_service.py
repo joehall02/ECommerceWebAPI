@@ -1,4 +1,4 @@
-from flask_jwt_extended import create_access_token, create_refresh_token, set_access_cookies, set_refresh_cookies
+from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity, set_access_cookies, set_refresh_cookies
 from models import User, Cart
 from flask import current_app, make_response, jsonify
 from marshmallow import ValidationError
@@ -74,19 +74,31 @@ class UserService:
             raise ValidationError('Invalid email or password')
 
         access_token = create_access_token(identity=user.id, expires_delta=current_app.config['JWT_ACCESS_TOKEN_EXPIRES']) # Create an access token for the user with a 1 hour expiry
-        refresh_token = create_refresh_token(identity=user.id) # Create a refresh token for the user
+        refresh_token = create_refresh_token(identity=user.id, expires_delta=current_app.config['JWT_REFRESH_TOKEN_EXPIRES']) # Create a refresh token for the user
         
         # Create a response
         response = make_response(jsonify({'message': 'Login successful'}))
 
-        # Set HTTP-only cookies for the access and refresh tokens
         # response.set_cookie('access_token', access_token, httponly=True, secure=False, samesite='Lax', path='/')
         # response.set_cookie('refresh_token', refresh_token, httponly=True, secure=False, samesite='Lax', path='/')
-        set_access_cookies(response, access_token)
-        set_refresh_cookies(response, refresh_token)
+        
+        # Set HTTP-only cookies for the access and refresh tokens
+        set_access_cookies(response, access_token, max_age=current_app.config['JWT_ACCESS_TOKEN_EXPIRES'].total_seconds())
+        set_refresh_cookies(response, refresh_token, max_age=current_app.config['JWT_REFRESH_TOKEN_EXPIRES'].total_seconds())
 
         return response
 
+    @staticmethod
+    def refresh_token():
+        current_user_id = get_jwt_identity()
+        new_access_token = create_access_token(identity=current_user_id, expires_delta=current_app.config['JWT_ACCESS_TOKEN_EXPIRES']) # Create a new access token
+
+        response = make_response(jsonify({'message': 'Token refreshed'}))
+
+        # Set the new access token as an HTTP-only cookie
+        set_access_cookies(response, new_access_token)
+
+        return response
     
     @staticmethod
     def reset_password(data):

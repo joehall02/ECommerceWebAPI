@@ -4,7 +4,7 @@ from models import Product, Category, FeaturedProduct, ProductImage
 from werkzeug.utils import secure_filename
 from google.cloud import storage
 from dotenv import load_dotenv
-from schemas import ProductSchema, ProductImageSchema, FeaturedProductSchema
+from schemas import ProductSchema, ProductImageSchema, FeaturedProductSchema, ProductShopSchema
 import os
 
 # Load environment variables
@@ -14,6 +14,7 @@ load_dotenv()
 product_schema = ProductSchema()
 featured_product_schema = FeaturedProductSchema()
 product_image_schema = ProductImageSchema()
+product_shop_schema = ProductShopSchema()
 
 # Check if the file is an image
 def allowed_file(filename):
@@ -108,8 +109,21 @@ class ProductService:
         if not products:
             raise ValidationError('No products found')
         
+        # Prepare the data to be serialized
+        product_list = []
+        
+        for product in products:
+            image_path = product.product_images[0].image_path if product.product_images else None
+            product_data = {
+                'product_id': product.id,
+                'name': product.name,                
+                'price': product.price,                                
+                'image_path': image_path
+            }
+            product_list.append(product_data)
+        
         # Serialize the data
-        products = product_schema.dump(products, many=True)
+        products = product_shop_schema.dump(product_list, many=True)
 
         return products
     

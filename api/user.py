@@ -50,19 +50,27 @@ class AuthenticatedResource(Resource):
             current_user_id = get_jwt_identity() 
             if not current_user_id:
                 logged_in = False
+                is_admin = False
             else:
                 logged_in = True
+
+                # Check if the user is an admin
+                user = User.query.get(current_user_id)
+                if user.role == 'admin':
+                    is_admin = True
+                else:
+                    is_admin = False
                        
         except Exception as e:
             return {'error': str(e)}, 500
         
-        return jsonify(logged_in=logged_in)
+        return jsonify(logged_in=logged_in, is_admin=is_admin)
     
 @user_ns.route('/logout', methods=['POST'])
 class LogoutResource(Resource):
     def post(self):
         response = jsonify({'message': 'Logout successful'})
-        unset_jwt_cookies(response)
+        unset_jwt_cookies(response) # Unset the jwt cookies, effectively logging the user out
         return response
     
 @user_ns.route('/reset-password', methods=['PUT'])
@@ -75,16 +83,11 @@ class ResetPasswordResource(Resource):
         
         return {'message': 'Password reset successfully'}, 200
     
-# @user_ns.route('/refresh', methods=['POST'])
-# class RefreshResource(Resource):
-#     @jwt_required(refresh=True) # Ensure that the token is a refresh token
-#     def post(self): # Refresh the access token
-#         try:
-#             current_user_id = get_jwt_identity()
-#             new_access_token = create_access_token(identity=current_user_id, expires_delta=current_app.config['JWT_ACCESS_TOKEN_EXPIRES'])
-#         except ValidationError as e:
-#             return {'error': str(e)}, 400
-#         except Exception as e:
-#             return {'error': str(e)}, 500
-        
-#         return {'access_token': new_access_token}, 200
+@user_ns.route('/refresh', methods=['POST'])
+class RefreshResource(Resource):
+    @jwt_required(refresh=True) # Ensure that the token is a refresh token
+    @handle_exceptions
+    def post(self): # Refresh the access token
+        response = UserService.refresh_token()
+
+        return response                

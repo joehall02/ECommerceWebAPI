@@ -18,6 +18,13 @@ product_model = product_ns.model('Product', {
     'category_id': fields.Integer(required=True),
 })
 
+product_shop_model = product_ns.model('ProductShop', {
+    'product_id': fields.Integer(required=True),
+    'name': fields.String(required=True),
+    'price': fields.Float(required=True),
+    'image_path': fields.String(required=True),
+})
+
 featured_product_model = product_ns.model('FeaturedProduct', {
     'product_id': fields.Integer(required=True),
 })
@@ -29,13 +36,12 @@ product_image_model = product_ns.model('ProductImage', {
 
 # Define the routes for the product operations
 @product_ns.route('/', methods=['GET'])
-class ProductResource(Resource):
-    @jwt_required()
+class ProductResource(Resource):    
     @handle_exceptions
     def get(self): # Get all products
         products = ProductService.get_all_products()        
         
-        return marshal(products, product_model), 200
+        return marshal(products, product_shop_model), 200
         
 @product_ns.route('/<int:product_id>', methods=['GET'])
 class ProductResource(Resource):
