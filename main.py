@@ -28,7 +28,7 @@ def create_app(config=Development):
     db.init_app(app)
 
     # Enable CORS
-    CORS(app, supports_credentials=True, origins=['http://localhost:3000'])
+    CORS(app, supports_credentials=True, origins=['http://localhost:3000'], expose_headers=['x-access-csrf-token', 'x-refresh-csrf-token', 'x-csrf-token']) # Export the x-csrf-token header
 
     # Initialize the JWT manager
     jwt = JWTManager(app)

@@ -85,9 +85,9 @@ class ResetPasswordResource(Resource):
     
 @user_ns.route('/refresh', methods=['POST'])
 class RefreshResource(Resource):
-    @jwt_required(refresh=True) # Ensure that the token is a refresh token
+    @jwt_required(refresh=True) # Ensure that the user is authenticated
     @handle_exceptions
-    def post(self): # Refresh the access token
+    def post(self): # Refresh the access token                        
         response = UserService.refresh_token()
 
         return response                

@@ -1,4 +1,4 @@
-from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity, set_access_cookies, set_refresh_cookies
+from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity, set_access_cookies, set_refresh_cookies, get_csrf_token
 from models import User, Cart
 from flask import current_app, make_response, jsonify
 from marshmallow import ValidationError
@@ -79,6 +79,10 @@ class UserService:
         # Create a response
         response = make_response(jsonify({'message': 'Login successful'}))
 
+        # Set the x-csrf-token header
+        response.headers['x-access-csrf-token'] = get_csrf_token(access_token)
+        response.headers['x-refresh-csrf-token'] = get_csrf_token(refresh_token)
+
         # response.set_cookie('access_token', access_token, httponly=True, secure=False, samesite='Lax', path='/')
         # response.set_cookie('refresh_token', refresh_token, httponly=True, secure=False, samesite='Lax', path='/')
         
@@ -95,8 +99,11 @@ class UserService:
 
         response = make_response(jsonify({'message': 'Token refreshed'}))
 
+        # Set the x-csrf-token header
+        response.headers['x-access-csrf-token'] = get_csrf_token(new_access_token)        
+
         # Set the new access token as an HTTP-only cookie
-        set_access_cookies(response, new_access_token)
+        set_access_cookies(response, new_access_token, max_age=current_app.config['JWT_ACCESS_TOKEN_EXPIRES'].total_seconds())
 
         return response
     
