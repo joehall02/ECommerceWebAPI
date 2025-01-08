@@ -16,6 +16,7 @@ from api.order import order_ns
 from api.payment import payment_ns
 from api.address import address_ns
 from api.cart import cart_ns
+import stripe
 
 def create_app(config=Development):
     # Create an instance of the Flask app
@@ -26,6 +27,9 @@ def create_app(config=Development):
 
     # Initialize the database
     db.init_app(app)
+
+    # Initialise the Stripe API
+    stripe.api_key = app.config['STRIPE_API_KEY']
 
     # Enable CORS
     CORS(app, supports_credentials=True, origins=['http://localhost:3000'], expose_headers=['x-access-csrf-token', 'x-refresh-csrf-token', 'x-csrf-token']) # Export the x-csrf-token header

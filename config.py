@@ -1,6 +1,7 @@
 import os
 from datetime import timedelta
 from dotenv import load_dotenv
+import stripe
 
 load_dotenv() # Load environment variables from the .env file
 
@@ -16,6 +17,7 @@ class Config:
     JWT_COOKIE_CSRF_PROTECT = True  # Set to True to enable CSRF protection    
     JWT_COOKIE_SECURE = True # Set to True to enable secure cookies
     JWT_COOKIE_SAMESITE = 'None' # Set the SameSite attribute for cookies    
+    STRIPE_API_KEY = os.getenv('STRIPE_API_KEY') # Get the Stripe API key from the environment variables
 
 # Development configuration class
 class Development(Config):
