@@ -23,6 +23,13 @@ class AddressService:
         if not user:
             raise ValidationError('User not found')
         
+        # If is_default is True, set all other addresses to False
+        if valid_data['is_default'] == True:
+            addresses = Address.query.filter_by(user_id=user).all()
+            for address in addresses:
+                address.is_default = False
+                address.save()
+
         new_address = Address(
             full_name = valid_data['full_name'],
             address_line_1 = valid_data['address_line_1'],
@@ -91,9 +98,22 @@ class AddressService:
         if not valid_data:
             raise ValidationError('No data provided')
         
+        user = get_jwt_identity()
+
+        if not user:
+            raise ValidationError('User not found')
+        
+        # if is_default is True, set all addresses except the current one to False
+        if valid_data['is_default'] == True:
+            addresses = Address.query.filter_by(user_id=user).all()
+            for addr in addresses:
+                if addr.id != address_id:    
+                    addr.is_default = False
+                    addr.save()
+        
         # Update the address fields
         # Loop through the data and update the address fields
-        for key, value in data.items():
+        for key, value in valid_data.items():            
             setattr(address, key, value)
 
         address.save()
@@ -112,5 +132,17 @@ class AddressService:
             raise ValidationError('Address not found')
         
         address.delete()
+
+        # Set the next address as default if it exists
+        user = get_jwt_identity()
+
+        if not user:
+            raise ValidationError('User not found')
+        
+        addresses = Address.query.filter_by(user_id=user).all()
+
+        if addresses:
+            addresses[0].is_default = True
+            addresses[0].save()
 
         return address

@@ -11,6 +11,7 @@ address_ns = Namespace('address', description='Address related operations')
 # Define the models used for api documentation,
 # actual validation is done using the schema
 address_model = address_ns.model('Address', {
+    'id': fields.Integer(required=True),
     'full_name': fields.String(required=True),
     'address_line_1': fields.String(required=True),
     'address_line_2': fields.String(),

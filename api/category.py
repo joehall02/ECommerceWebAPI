@@ -12,6 +12,7 @@ category_ns = Namespace('category', description='Category operations')
 # Define the models used for api documentation,
 # actual validation is done using the schema
 category_model = category_ns.model('Category', {
+    'id': fields.Integer(required=True),
     'name': fields.String(required=True),
 })
 
@@ -26,7 +27,6 @@ product_model = category_ns.model('Product', {
 # Define the routes for category operations
 @category_ns.route('/', methods=['GET'])
 class CategoryResource(Resource):
-    @jwt_required()
     @handle_exceptions
     def get(self): # Get all categories                 
         categories = CategoryService.get_categories()        
@@ -35,12 +35,17 @@ class CategoryResource(Resource):
 
 @category_ns.route('/<int:category_id>', methods=['GET'])
 class CategoryResource(Resource):
-    @jwt_required()
     @handle_exceptions
-    def get(self, category_id): # Get all products in a category        
-        products = CategoryService.get_all_products_in_category(category_id)                        
+    def get(self, category_id): # Get category details
+        category = CategoryService.get_category(category_id)
+
+        return marshal(category, category_model), 200
+    
+    
+    # def get(self, category_id): # Get all products in a category        
+    #     products = CategoryService.get_all_products_in_category(category_id)                        
                          
-        return marshal(products, product_model), 200
+    #     return marshal(products, product_model), 200
 
 @category_ns.route('/admin', methods=['POST'])
 class AdminCategoryResource(Resource):
@@ -56,6 +61,14 @@ class AdminCategoryResource(Resource):
     
 @category_ns.route('/admin/<int:category_id>', methods=['PUT', 'DELETE'])
 class AdminCategoryResource(Resource):
+    # @jwt_required()
+    # @admin_required()
+    # @handle_exceptions
+    # def get(self, category_id): # Get category details
+    #     category = CategoryService.get_category(category_id)
+
+    #     return marshal(category, category_model), 200
+
     @jwt_required()
     @admin_required()
     @handle_exceptions

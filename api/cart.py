@@ -1,4 +1,4 @@
-from marshmallow import ValidationError
+from flask import request
 from flask_restx import Namespace, Resource, fields, marshal
 from flask_jwt_extended import jwt_required
 from services.cart_service import CartService
@@ -13,17 +13,18 @@ cart_model = cart_ns.model('Cart', {
 })
 
 cart_product_model = cart_ns.model('CartProduct', {
+    'id': fields.Integer(required=True),
     'quantity': fields.Integer(required=True),
     'product_id': fields.Integer(required=True),
     'cart_id': fields.Integer(required=True),
 })  
 
 product_model = cart_ns.model('Product', {
+    'id': fields.Integer(required=True),
     'name': fields.String(required=True),
-    'description': fields.String(required=True),
     'price': fields.Float(required=True),
-    'stock': fields.Integer(required=True),
-    'category_id': fields.Integer(required=True),
+    'image_path': fields.String(required=True),
+    'category_name': fields.String(required=True),
 })
 
 combined_model = cart_ns.model('Combined', {
@@ -41,8 +42,17 @@ class CartProductResource(Resource):
         
         return marshal(products, combined_model), 200
 
-@cart_ns.route('/<int:cart_product_id>', methods=['DELETE'])
-class CartProductDetailResource(Resource):
+@cart_ns.route('/<int:cart_product_id>', methods=['DELETE', 'PUT'])
+class CartProductDetailResource(Resource):   
+    @jwt_required()
+    @handle_exceptions
+    def put(self, cart_product_id): # Update the quantity of a product in the cart
+        data = request.get_json()
+
+        CartService.update_product_quantity_in_cart(data, cart_product_id)
+
+        return {'message': 'Product quantity updated successfully'}, 200
+
     @jwt_required()
     @handle_exceptions
     def delete(self, cart_product_id): # Delete a product from the cart        
@@ -54,7 +64,9 @@ class CartProductDetailResource(Resource):
 class CartProductAddResource(Resource):
     @jwt_required()
     @handle_exceptions
-    def post(self, product_id): # Add a product to the cart                
-        CartService.add_product_to_cart(product_id)        
+    def post(self, product_id): # Add a product to the cart        
+        data = request.get_json()
+
+        CartService.add_product_to_cart(data, product_id)        
         
         return {'message': 'Product added to cart successfully'}, 201

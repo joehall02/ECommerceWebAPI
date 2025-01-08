@@ -4,7 +4,7 @@ from models import Product, Category, FeaturedProduct, ProductImage
 from werkzeug.utils import secure_filename
 from google.cloud import storage
 from dotenv import load_dotenv
-from schemas import ProductSchema, ProductImageSchema, FeaturedProductSchema, ProductShopSchema
+from schemas import ProductSchema, ProductImageSchema, FeaturedProductSchema, ProductShopSchema, ProductAdminSchema
 import os
 
 # Load environment variables
@@ -15,6 +15,7 @@ product_schema = ProductSchema()
 featured_product_schema = FeaturedProductSchema()
 product_image_schema = ProductImageSchema()
 product_shop_schema = ProductShopSchema()
+product_admin_schema = ProductAdminSchema()
 
 # Check if the file is an image
 def allowed_file(filename):
@@ -83,6 +84,10 @@ class ProductService:
         # Validate the request data using the schema
         valid_data = product_schema.load(data)
 
+        # Check if the price is a negative number
+        if valid_data['price'] < 0:
+            raise ValidationError('Price cannot be a negative number')
+
         category = Category.query.get(data['category_id'])
 
         # Check category exists
@@ -113,12 +118,13 @@ class ProductService:
         product_list = []
         
         for product in products:
-            image_path = product.product_images[0].image_path if product.product_images else None
+            image_path = product.product_images[0].image_path if product.product_images else None # Get the first image path if it exists
             product_data = {
-                'product_id': product.id,
+                'id': product.id,
                 'name': product.name,                
                 'price': product.price,                                
-                'image_path': image_path
+                'image_path': image_path,
+                'category_name': product.category.name
             }
             product_list.append(product_data)
         
@@ -127,6 +133,19 @@ class ProductService:
 
         return products
     
+    @staticmethod
+    def get_all_admin_products():
+        products = Product.query.all()
+
+        # Check if there are any products
+        if not products:
+            raise ValidationError('No products found')
+        
+        # Serialize the data
+        products = product_admin_schema.dump(products, many=True)
+
+        return products
+
     @staticmethod
     def get_product(product_id):
         # Check if the product id is provided
@@ -195,6 +214,14 @@ class ProductService:
         if not product:
             raise ValidationError('Product not found')
         
+        # Get the product images
+        product_images = ProductImage.query.filter_by(product_id=product_id).all()
+
+        # Loop through the product images and remove them from Google Cloud Storage
+        for product_image in product_images:
+            remove_image_from_google_cloud_storage(product_image.image_path)                
+
+        # Delete the product
         product.delete()
 
         return product
@@ -238,10 +265,24 @@ class FeaturedProductService:
         # List comprehension to add all products associated with each featured product to a list, similar to a for loop
         products = [featured_product.product for featured_product in featured_products] 
 
-        # Serialize the data
-        featured_products = product_schema.dump(featured_products, many=True)
+         # Prepare the data to be serialized
+        product_list = []
+        
+        for product in products:
+            image_path = product.product_images[0].image_path if product.product_images else None # Get the first image path if it exists
+            product_data = {
+                'id': product.id,
+                'name': product.name,                
+                'price': product.price,                                
+                'image_path': image_path,
+                'category_name': product.category.name
+            }
+            product_list.append(product_data)
 
-        return products
+        # Serialize the data
+        featured_products = product_shop_schema.dump(product_list, many=True)
+
+        return featured_products
     
     @staticmethod
     def get_featured_product(featured_product_id):
@@ -266,6 +307,23 @@ class FeaturedProductService:
         featured_product = product_schema.dump(featured_product)
         
         return product
+    
+    @staticmethod
+    def check_featured_product(product_id):
+        # Check if the product id is provided
+        if not product_id:
+            raise ValidationError('No product id provided')        
+
+        featured_product = FeaturedProduct.query.filter_by(product_id=product_id).first()
+        
+        # Check if the product is featured
+        if not featured_product:
+            raise ValidationError('Product is not featured')
+        
+        # Serialize the data
+        featured_product = featured_product_schema.dump(featured_product)
+
+        return featured_product
     
     @staticmethod
     def delete_featured_product(featured_product_id):
@@ -325,6 +383,14 @@ class ProductImageService:
         if not product:
             raise ValidationError('Product not found')
         
+        # Check if the product already has an image
+        product_image = ProductImage.query.filter_by(product_id=valid_data['product_id']).first()
+
+        # if product_image exists, delete the image and create a new one
+        if product_image:
+            remove_image_from_google_cloud_storage(product_image.image_path)
+            product_image.delete()
+        
         new_product_image = ProductImage(
             image_path = valid_data['image_path'],
             product_id = valid_data['product_id']
@@ -334,7 +400,7 @@ class ProductImageService:
 
         return new_product_image
 
-    def get_all_product_images(product_id):
+    def get_product_image(product_id):
         # Check if the product id is provided
         if not product_id:
             raise ValidationError('No product id provided')
@@ -345,16 +411,16 @@ class ProductImageService:
         if not product:
             raise ValidationError('Product not found')
         
-        product_images = ProductImage.query.filter_by(product_id=product_id).all()
+        product_image = ProductImage.query.filter_by(product_id=product_id).first()
 
         # Check if there are any product images
-        if not product_images:
-            raise ValidationError('No product images found')
+        if not product_image:
+            raise ValidationError('No product image found')
         
         # Serialize the data
-        product_images = product_image_schema.dump(product_images, many=True)
+        product_image = product_image_schema.dump(product_image)
         
-        return product_images
+        return product_image
 
     def delete_product_image(product_image_id):
         # Check if the product image id is provided

@@ -1,6 +1,7 @@
 from marshmallow import ValidationError
 from models import Category
 from schemas import CategorySchema, ProductSchema
+from services.product_service import remove_image_from_google_cloud_storage # Used to delete product images from cloud bucket if admin deletes a category
 
 # Define the schema instances
 category_schema = CategorySchema()
@@ -41,6 +42,19 @@ class CategoryService:
         categories = category_schema.dump(categories, many=True)
 
         return categories
+    
+    @staticmethod
+    def get_category(category_id):
+        category = Category.query.get(category_id)
+
+        # Check if the category exists
+        if not category:
+            raise ValidationError('Category not found')
+        
+        # Serialize the category
+        category = category_schema.dump(category)
+
+        return category
     
     @staticmethod
     def get_all_products_in_category(category_id):
@@ -100,6 +114,17 @@ class CategoryService:
         # Check if the category exists
         if not category:
             raise ValidationError('Category not found')
+        
+        # Get all products in the category
+        products = category.products
+
+        # Check if the category has any products
+        if products:
+            # Delete each product image from Google Cloud Storage
+            for product in products:
+                product_images = product.product_images
+                for product_image in product_images:
+                    remove_image_from_google_cloud_storage(product_image.image_path)
         
         category.delete()
         return category

@@ -11,6 +11,7 @@ product_ns = Namespace('product', description='Product operations')
 # Define the models used for api documentation,
 # actual validation is done using the schema
 product_model = product_ns.model('Product', {
+    'id': fields.Integer(required=True),
     'name': fields.String(required=True),
     'description': fields.String(required=True),
     'price': fields.Float(required=True),
@@ -19,13 +20,22 @@ product_model = product_ns.model('Product', {
 })
 
 product_shop_model = product_ns.model('ProductShop', {
-    'product_id': fields.Integer(required=True),
+    'id': fields.Integer(required=True),
     'name': fields.String(required=True),
     'price': fields.Float(required=True),
     'image_path': fields.String(required=True),
+    'category_name': fields.String(required=True),
+})
+
+product_admin_model = product_ns.model('ProductAdmin', {
+    'id': fields.Integer(required=True),
+    'name': fields.String(required=True),
+    'price': fields.Float(required=True),
+    'stock': fields.Integer(required=True),
 })
 
 featured_product_model = product_ns.model('FeaturedProduct', {
+    'id': fields.Integer(required=True),
     'product_id': fields.Integer(required=True),
 })
 
@@ -45,7 +55,6 @@ class ProductResource(Resource):
         
 @product_ns.route('/<int:product_id>', methods=['GET'])
 class ProductResource(Resource):
-    @jwt_required()
     @handle_exceptions
     def get(self, product_id): # Get a single product        
         product = ProductService.get_product(product_id)        
@@ -55,16 +64,14 @@ class ProductResource(Resource):
 # Define Featured Product routes for featured product operations
 @product_ns.route('/featured-product', methods=['GET'])
 class FeaturedProductResource(Resource):
-    @jwt_required()
     @handle_exceptions
     def get(self): # Get all featured products        
         featured_products = FeaturedProductService.get_all_featured_products()
         
-        return marshal(featured_products, product_model), 200 # return product_model
+        return marshal(featured_products, product_shop_model), 200 # return product_model
 
 @product_ns.route('/featured-product/<int:featured_product_id>', methods=['GET'])
 class FeaturedProductResource(Resource):
-    @jwt_required()
     @handle_exceptions
     def get(self, featured_product_id): # Get a single featured product
         featured_product = FeaturedProductService.get_featured_product(featured_product_id)
@@ -73,15 +80,14 @@ class FeaturedProductResource(Resource):
 
 @product_ns.route('/product-image/<int:product_id>', methods=['GET'])
 class ProductImageResource(Resource):
-    @jwt_required()
     @handle_exceptions
     def get(self, product_id): # Get all product images for a product
         
-        product_images = ProductImageService.get_all_product_images(product_id)        
+        product_image = ProductImageService.get_product_image(product_id)        
 
-        return marshal(product_images, product_image_model), 200
+        return marshal(product_image, product_image_model), 200
 
-@product_ns.route('/admin', methods=['POST'])
+@product_ns.route('/admin', methods=['POST', 'GET'])
 class AdminProductResource(Resource):
     @jwt_required()
     @admin_required()
@@ -89,9 +95,17 @@ class AdminProductResource(Resource):
     def post(self): # Create a new product
         data = request.get_json()
         
-        ProductService.create_product(data)        
+        product = ProductService.create_product(data)        
         
-        return {'message': 'Product created successfully'}, 201
+        return {'message': 'Product created successfully', 'product_id': product.id}, 201
+    
+    @jwt_required()
+    @admin_required()
+    @handle_exceptions
+    def get(self): # Get all products for admin
+        products = ProductService.get_all_admin_products()
+
+        return marshal(products, product_admin_model), 200
 
 @product_ns.route('/admin/<int:product_id>', methods=['PUT', 'DELETE'])
 class AdminProductResource(Resource):
@@ -113,6 +127,15 @@ class AdminProductResource(Resource):
         
         return {'message': 'Product deleted successfully'}, 200
     
+@product_ns.route('/admin/featured-product/<int:product_id>', methods=['GET'])
+class AdminFeaturedProduct(Resource):
+    @jwt_required()
+    @handle_exceptions
+    def get(self, product_id): # Check if a product is featured
+        featured_product = FeaturedProductService.check_featured_product(product_id)
+
+        return marshal(featured_product, featured_product_model), 200 # return featured_product_model
+
 @product_ns.route('/admin/featured-product/<int:product_id>', methods=['POST'])
 class AdminFeaturedProduct(Resource):
     @jwt_required()
