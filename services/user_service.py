@@ -61,6 +61,8 @@ class UserService:
     
     @staticmethod
     def login_user(data):
+        print(data)
+
         # Check if data is provided
         if not data:
             raise ValidationError('No data provided')
@@ -73,8 +75,8 @@ class UserService:
         if not user or not check_password_hash(user.password, valid_data['password']): # Check if the user exists and the password is correct
             raise ValidationError('Invalid email or password')
 
-        access_token = create_access_token(identity=user.id, expires_delta=current_app.config['JWT_ACCESS_TOKEN_EXPIRES']) # Create an access token for the user with a 1 hour expiry
-        refresh_token = create_refresh_token(identity=user.id, expires_delta=current_app.config['JWT_REFRESH_TOKEN_EXPIRES']) # Create a refresh token for the user
+        access_token = create_access_token(identity=str(user.id), expires_delta=current_app.config['JWT_ACCESS_TOKEN_EXPIRES']) # Create an access token for the user with a 1 hour expiry
+        refresh_token = create_refresh_token(identity=str(user.id), expires_delta=current_app.config['JWT_REFRESH_TOKEN_EXPIRES']) # Create a refresh token for the user
         
         # Create a response
         response = make_response(jsonify({'message': 'Login successful'}))

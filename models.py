@@ -95,6 +95,8 @@ class Product(db.Model):
     description = db.Column(db.String(1000), nullable=False)
     price = db.Column(db.DECIMAL(10, 2), nullable=False)
     stock = db.Column(db.Integer, nullable=False)
+    stripe_product_id = db.Column(db.String(50), nullable=True) # Stripe product id
+    stripe_price_id = db.Column(db.String(50), nullable=True) # Stripe price id
 
     # Foreign key
     category_id = db.Column(db.Integer, db.ForeignKey('Category.id', ondelete='CASCADE'), nullable=False) # ondelete='CASCADE' ensures that when a category is deleted, all products in that category are also deleted

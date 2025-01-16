@@ -6,6 +6,7 @@ from google.cloud import storage
 from dotenv import load_dotenv
 from schemas import ProductSchema, ProductImageSchema, FeaturedProductSchema, ProductShopSchema, ProductAdminSchema
 import os
+import stripe
 
 # Load environment variables
 load_dotenv()
@@ -94,6 +95,7 @@ class ProductService:
         if not category:
             raise ValidationError('Category not found')
 
+        # Make product locally
         new_product = Product(
             name = valid_data['name'],
             description = valid_data['description'],
@@ -103,6 +105,33 @@ class ProductService:
         )
 
         new_product.save()
+
+        try:
+            # Create product in stripe
+            stripe_product = stripe.Product.create(
+                name=new_product.name,
+                description=new_product.description,
+                metadata={
+                    'product_id': new_product.id # Track local product id in stripe
+                }
+            )
+
+            # Create price in stripe
+            stripe_price = stripe.Price.create(
+                unit_amount=int(new_product.price * 100), # Convert price to pence
+                currency='gbp', # Set currency to GBP
+                product=stripe_product.id
+            )
+
+            # Update the product with the stripe product and price ids
+            new_product.stripe_product_id = stripe_product.id
+            new_product.stripe_price_id = stripe_price.id
+
+            new_product.save()
+
+        except Exception as e:
+            new_product.delete()
+            raise ValidationError(f"Failed to create product in Stripe: {str(e)}")
 
         return new_product
 
@@ -191,7 +220,49 @@ class ProductService:
             category = Category.query.get(valid_data['category_id'])
             if not category:
                 raise ValidationError('Category not found')
-        
+
+        # Check if name is provided, if so, update the stripe product
+        if 'name' in valid_data:
+            try:
+                stripe.Product.modify(
+                    product.stripe_product_id,
+                    name=valid_data['name']                    
+                )
+            except Exception as e:
+                raise ValidationError(f"Failed to update product in Stripe: {str(e)}")
+
+        # Check if description is provided, if so, update the stripe product
+        if 'description' in valid_data:
+            try:
+                stripe.Product.modify(
+                    product.stripe_product_id,
+                    description=valid_data['description']                    
+                )
+            except Exception as e:
+                raise ValidationError(f"Failed to update product in Stripe: {str(e)}")
+
+        # Check if price is provided, if so, update the stripe price
+        if 'price' in valid_data:
+            try:
+                # Set the price to inactive in stripe
+                stripe.Price.modify(
+                    product.stripe_price_id,
+                    active=False # Set the price to inactive
+                )
+
+                # Create a new price in stripe
+                stripe_price = stripe.Price.create(
+                    unit_amount=int(valid_data['price'] * 100), # Convert price to pence
+                    currency='gbp', # Set currency to GBP
+                    product=product.stripe_product_id
+                )
+
+                # Update the product with the new stripe price id
+                product.stripe_price_id = stripe_price.id
+
+            except Exception as e:
+                raise ValidationError(f"Failed to update price in Stripe: {str(e)}")
+
         # Update product details
         # Loop through the data and update the product attributes using the key-value pairs in the data
         for key, value in valid_data.items():
@@ -367,6 +438,12 @@ class ProductImageService:
         # Upload the image file to Google Cloud Storage
         image_path = upload_image_to_google_cloud_storage(image_file)
 
+        # Upload the image file to Stripe product
+        stripe.Product.modify(
+            product.stripe_product_id,
+            images=["https://storage.googleapis.com/" + image_path]
+        )
+
         return image_path    
 
     def create_product_image(data):
@@ -434,8 +511,8 @@ class ProductImageService:
             raise ValidationError('Product image not found')
         
         # Remove the image file from Google Cloud Storage
-        remove_image_from_google_cloud_storage(product_image.image_path)
-        
+        remove_image_from_google_cloud_storage(product_image.image_path)        
+
         product_image.delete()
 
         return product_image

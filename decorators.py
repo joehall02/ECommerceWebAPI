@@ -26,7 +26,7 @@ def handle_exceptions(fn):
         except ValidationError as e:
             return {'error': str(e)}, 400
         except Exception as e:
-            # return {'error': str(e)}, 500
-            return {'error': 'An unexpected error occured. Please try again later.'}, 500
+            return {'error': str(e)}, 500
+            # return {'error': 'An unexpected error occured. Please try again later.'}, 500
         
     return decorator
