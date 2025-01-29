@@ -6,6 +6,10 @@ service-account-file.json
 
 # Ignore __pycache__ directory
 __pycache__/
+api/__pycache__/
+migrations/__pycache__/
+tests/__pycache__/
+services/__pycache__/
 
 # Ignore .vscode directory
 .vscode/

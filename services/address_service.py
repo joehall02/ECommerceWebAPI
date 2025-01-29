@@ -76,6 +76,22 @@ class AddressService:
         address = address_schema.dump(address)
         
         return address
+    
+    @staticmethod
+    def get_default_address():
+        user = get_jwt_identity()
+
+        if not user:
+            raise ValidationError('User not found')
+        
+        address = Address.query.filter_by(user_id=user, is_default=True).first()
+
+        if not address:
+            raise ValidationError('Default address not found')
+        
+        address = address_schema.dump(address)
+
+        return address
 
     @staticmethod
     def update_address(address_id, data):

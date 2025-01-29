@@ -11,7 +11,6 @@ class User(db.Model):
 
     # Relationships
     addresses = db.relationship('Address', backref='user', lazy=True) 
-    payments = db.relationship('Payment', backref='user', lazy=True, cascade="all, delete", passive_deletes=True) # cascade="all, delete" ensures that when a user is deleted, all their payment details are also deleted and passive_deletes=True ensures that the database handles the deletion of the payment details
     carts = db.relationship('Cart', backref='user', lazy=True, uselist=False, cascade="all, delete", passive_deletes=True) # uselist=False ensures that a user can only have one cart, cascade="all, delete" ensures that when a user is deleted, their cart is also deleted, and passive_deletes=True ensures that the database handles the deletion of the cart
     orders = db.relationship('Order', backref='user', lazy=True)
 
@@ -50,24 +49,24 @@ class Address(db.Model):
         db.session.delete(self)
         db.session.commit()
 
-class Payment(db.Model):
-    __tablename__ = 'Payment'
-    id = db.Column(db.Integer, primary_key=True)
-    stripe_payment_id = db.Column(db.String(50), nullable=False)
+# class Payment(db.Model):
+#     __tablename__ = 'Payment'
+#     id = db.Column(db.Integer, primary_key=True)
+#     stripe_payment_id = db.Column(db.String(50), nullable=False)
 
-    # Foreign key
-    user_id = db.Column(db.Integer, db.ForeignKey('User.id', ondelete='CASCADE'), nullable=False) # ondelete='CASCADE' ensures that when a user is deleted, their payment details are also deleted
+#     # Foreign key
+#     user_id = db.Column(db.Integer, db.ForeignKey('User.id', ondelete='CASCADE'), nullable=False) # ondelete='CASCADE' ensures that when a user is deleted, their payment details are also deleted
 
-    def __repr__(self):
-        return f'<Payment {self.id} {self.name_on_card}>'
+#     def __repr__(self):
+#         return f'<Payment {self.id} {self.name_on_card}>'
     
-    def save(self):
-        db.session.add(self)
-        db.session.commit()
+#     def save(self):
+#         db.session.add(self)
+#         db.session.commit()
 
-    def delete(self):
-        db.session.delete(self)
-        db.session.commit()
+#     def delete(self):
+#         db.session.delete(self)
+#         db.session.commit()
     
 class Category(db.Model):
     __tablename__ = 'Category'
@@ -202,16 +201,17 @@ class Order(db.Model):
     order_date = db.Column(db.Date, nullable=False)
     total_price = db.Column(db.DECIMAL(10, 2), nullable=False)
     status = db.Column(db.String(50), nullable=False)
+    full_name = db.Column(db.String(100), nullable=False)
+    address_line_1 = db.Column(db.String(100), nullable=False)
+    address_line_2 = db.Column(db.String(100), nullable=True)
+    city = db.Column(db.String(100), nullable=False)
+    postcode = db.Column(db.String(20), nullable=False)
     
     # Foreign keys
     user_id = db.Column(db.Integer, db.ForeignKey('User.id'), nullable=False)
-    address_id = db.Column(db.Integer, db.ForeignKey('Address.id'), nullable=False)
-    payment_id = db.Column(db.Integer, db.ForeignKey('Payment.id'), nullable=False)
 
     # Relationships
-    order_items = db.relationship('OrderItem', backref='order', lazy=True, cascade="all, delete", passive_deletes=True) # cascade="all, delete" ensures that when an order is deleted, all order items are also deleted and passive_deletes=True ensures that the database handles the deletion of the order items
-    address = db.relationship('Address', backref='order', lazy=True, uselist=False) # uselist=False ensures that an order can only have one address
-    payment = db.relationship('Payment', backref='order', lazy=True, uselist=False, cascade="all, delete", passive_deletes=True) # uselist=False ensures that an order can only have one payment. cascade="all, delete" ensures that when an order is deleted, the payment is also deleted and passive_deletes=True ensures that the database handles the deletion of the payment
+    order_items = db.relationship('OrderItem', backref='order', lazy=True, cascade="all, delete", passive_deletes=True) # cascade="all, delete" ensures that when an order is deleted, all order items are also deleted and passive_deletes=True ensures that the database handles the deletion of the order items    
 
     def __repr__(self):
         return f'<Order {self.id} {self.total_price}>'
@@ -228,12 +228,13 @@ class OrderItem(db.Model):
     __tablename__ = 'Order_Item'
     id = db.Column(db.Integer, primary_key=True)
     quantity = db.Column(db.Integer, nullable=False)
-    price = db.Column(db.DECIMAL(10, 2), nullable=False)
+    price = db.Column(db.DECIMAL(10, 2), nullable=False) # Price at the time of purchase
+    name = db.Column(db.String(100), nullable=False) # Product name at the time of purchase
 
     # Foreign key
     order_id = db.Column(db.Integer, db.ForeignKey('Order.id', ondelete='CASCADE'), nullable=False) # ondelete='CASCADE' ensures that when an order is deleted, all order items are also deleted
-    product_id = db.Column(db.Integer, db.ForeignKey('Product.id'), nullable=False)
-
+    product_id = db.Column(db.Integer, db.ForeignKey('Product.id', ondelete='SET NULL'), nullable=True)  # Allow NULL
+    
     def __repr__(self):
         return f'<OrderItem {self.id} {self.quantity} {self.price}>'
     

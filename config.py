@@ -18,6 +18,7 @@ class Config:
     JWT_COOKIE_SECURE = True # Set to True to enable secure cookies
     JWT_COOKIE_SAMESITE = 'None' # Set the SameSite attribute for cookies    
     STRIPE_API_KEY = os.getenv('STRIPE_API_KEY') # Get the Stripe API key from the environment variables
+    STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET') # Get the Stripe webhook secret from the environment variables
 
 # Development configuration class
 class Development(Config):

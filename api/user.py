@@ -45,26 +45,29 @@ class LoginResource(Resource):
 @user_ns.route('/authenticate', methods=['GET'])
 class AuthenticatedResource(Resource):
     @jwt_required() # Ensure that the user is authenticated
+    @handle_exceptions
     def get(self):
-        try:
-            current_user_id = get_jwt_identity() 
-            if not current_user_id:
-                logged_in = False
-                is_admin = False
-            else:
-                logged_in = True
+        # try:
+        #     current_user_id = get_jwt_identity() 
+        #     if not current_user_id:
+        #         logged_in = False
+        #         is_admin = False
+        #     else:
+        #         logged_in = True
 
-                # Check if the user is an admin
-                user = User.query.get(current_user_id)
-                if user.role == 'admin':
-                    is_admin = True
-                else:
-                    is_admin = False
+        #         # Check if the user is an admin
+        #         user = User.query.get(current_user_id)
+        #         if user.role == 'admin':
+        #             is_admin = True
+        #         else:
+        #             is_admin = False
                        
-        except Exception as e:
-            return {'error': str(e)}, 500
+        # except Exception as e:
+        #     return {'error': str(e)}, 500
         
-        return jsonify(logged_in=logged_in, is_admin=is_admin)
+        response = UserService.authenticate_user()
+
+        return response
     
 @user_ns.route('/logout', methods=['POST'])
 class LogoutResource(Resource):

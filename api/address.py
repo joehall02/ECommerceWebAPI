@@ -38,6 +38,15 @@ class AddressResource(Resource):
         AddressService.create_address(data)        
         
         return {'message': 'Address created successfully'}, 201
+    
+@address_ns.route('/default', methods=['GET'])
+class AddressResource(Resource):
+    @jwt_required()
+    @handle_exceptions
+    def get(self): # Get the default address for a user
+        address = AddressService.get_default_address()
+        
+        return marshal(address, address_model), 200
 
 @address_ns.route('/<int:address_id>', methods=['GET', 'PUT', 'DELETE'])
 class AddressDetailResource(Resource):

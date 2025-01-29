@@ -61,8 +61,6 @@ class UserService:
     
     @staticmethod
     def login_user(data):
-        print(data)
-
         # Check if data is provided
         if not data:
             raise ValidationError('No data provided')
@@ -84,15 +82,44 @@ class UserService:
         # Set the x-csrf-token header
         response.headers['x-access-csrf-token'] = get_csrf_token(access_token)
         response.headers['x-refresh-csrf-token'] = get_csrf_token(refresh_token)
-
-        # response.set_cookie('access_token', access_token, httponly=True, secure=False, samesite='Lax', path='/')
-        # response.set_cookie('refresh_token', refresh_token, httponly=True, secure=False, samesite='Lax', path='/')
         
         # Set HTTP-only cookies for the access and refresh tokens
         set_access_cookies(response, access_token, max_age=current_app.config['JWT_ACCESS_TOKEN_EXPIRES'].total_seconds())
         set_refresh_cookies(response, refresh_token, max_age=current_app.config['JWT_REFRESH_TOKEN_EXPIRES'].total_seconds())
 
         return response
+
+    @staticmethod
+    def authenticate_user():
+        current_user_id = get_jwt_identity() 
+        if not current_user_id:
+            logged_in = False
+            is_admin = False
+        else:
+            logged_in = True
+
+            # Check if the user is an admin
+            user = User.query.get(current_user_id)
+            if user.role == 'admin':
+                is_admin = True
+            else:
+                is_admin = False
+
+        access_token = create_access_token(identity=current_user_id, expires_delta=current_app.config['JWT_ACCESS_TOKEN_EXPIRES']) # Create a new access token
+
+        response = make_response(jsonify(logged_in=logged_in, is_admin=is_admin))
+
+        print("logged in: ", logged_in)
+        print("is admin: ", is_admin)
+
+        # Set the x-csrf-token header
+        response.headers['x-access-csrf-token'] = get_csrf_token(access_token)
+
+        # Set the new access token as an HTTP-only cookie
+        set_access_cookies(response, access_token, max_age=current_app.config['JWT_ACCESS_TOKEN_EXPIRES'].total_seconds())
+
+        return response
+        
 
     @staticmethod
     def refresh_token():

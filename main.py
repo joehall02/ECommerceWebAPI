@@ -8,12 +8,12 @@ from flask_cors import CORS
 from dotenv import load_dotenv
 from exts import db
 import os
-from models import User, Address, Payment, Category, Product, Cart, Order, OrderItem, CartProduct, ProductImage, FeaturedProduct
+from models import User, Address, Category, Product, Cart, Order, OrderItem, CartProduct, ProductImage, FeaturedProduct
 from api.user import user_ns
 from api.category import category_ns
 from api.product import product_ns
 from api.order import order_ns
-from api.payment import payment_ns
+# from api.payment import payment_ns
 from api.address import address_ns
 from api.cart import cart_ns
 import stripe
@@ -30,6 +30,9 @@ def create_app(config=Development):
 
     # Initialise the Stripe API
     stripe.api_key = app.config['STRIPE_API_KEY']
+
+    # Initialise the Stripe webhook secret
+    stripe.webhook_secret = app.config['STRIPE_WEBHOOK_SECRET']
 
     # Enable CORS
     CORS(app, supports_credentials=True, origins=['http://localhost:3000'], expose_headers=['x-access-csrf-token', 'x-refresh-csrf-token', 'x-csrf-token']) # Export the x-csrf-token header
@@ -54,7 +57,7 @@ def create_app(config=Development):
     api.add_namespace(category_ns)
     api.add_namespace(product_ns)
     api.add_namespace(order_ns)
-    api.add_namespace(payment_ns)
+    # api.add_namespace(payment_ns)
     api.add_namespace(address_ns)
     api.add_namespace(cart_ns)
 

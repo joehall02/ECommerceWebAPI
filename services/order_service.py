@@ -1,8 +1,10 @@
 from datetime import date
+from flask import jsonify, request
 from marshmallow import ValidationError
 from models import Order, OrderItem, Cart
 from flask_jwt_extended import get_jwt_identity
 from schemas import OrderSchema, OrderItemSchema, OrderItemCombinedSchema
+import stripe
 
 # Define the schema instances
 order_schema = OrderSchema()
@@ -12,7 +14,7 @@ order_item_combined_schema = OrderItemCombinedSchema()
 # Services
 class OrderService:
     @staticmethod
-    def create_order(data):
+    def get_stripe_checkout_session(data):
         # Check if data is provided
         if not data:
             raise ValidationError('No data provided')
@@ -36,14 +38,69 @@ class OrderService:
         if not cart_items:
             raise ValidationError('Cart is empty')
 
+        # Create line items for Stripe checkout session
+        line_items = []
+        for cart_item in cart_items:
+            line_items.append({
+                'price': cart_item.product.stripe_price_id, # Stripe price id
+                'quantity': cart_item.quantity
+            })
+
+        # Create a stripe checkout session
+        session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=line_items,
+            mode='payment',
+            success_url='http://localhost:3000/checkout/success',
+            cancel_url='http://localhost:3000/checkout/cancel',
+            metadata={
+                'user_id': user,
+                'full_name': valid_data['full_name'],
+                'address_line_1': valid_data['address_line_1'],
+                'address_line_2': valid_data['address_line_2'] if 'address_line_2' in valid_data else None,
+                'city': valid_data['city'],
+                'postcode': valid_data['postcode'],
+            }
+        )
+
+        return {'session_id': session.id}
+
+    @staticmethod
+    def create_order(data):
+        # Check if data is provided
+        if not data:
+            raise ValidationError('No data provided')
+
+        # Validate the data against the order schema
+        valid_data = order_schema.load(data, partial=True) # Partial allows for missing fields
+
+        user = valid_data['user_id'] 
+
+        # Check if the user exists
+        if not user:
+            raise ValidationError('User not found')
+
+        # Get the cart
+        cart = Cart.query.filter_by(user_id=user).first()
+
+        # Get the cart items from the data
+        cart_items = Cart.query.get(cart.id).cart_products
+
+        # Check if the cart is empty
+        if not cart_items:
+            raise ValidationError('Cart is empty')
+
         # Create a new order
         new_order = Order(
             order_date = date.today(), # Get the current date in the format YYYY-MM-DD
             total_price = 0,
-            status = 'Pending',
+            status = 'Processing', # Default status
+            full_name = valid_data['full_name'],
+            address_line_1 = valid_data['address_line_1'],
+            address_line_2 = valid_data['address_line_2'],
+            city = valid_data['city'],
+            postcode = valid_data['postcode'],
             user_id = user,
-            address_id = valid_data['address_id'],
-            payment_id = valid_data['payment_id']
         )
         new_order.save()
 
@@ -51,6 +108,7 @@ class OrderService:
         for cart_item in cart_items:
             new_order_item = OrderItem(
                 quantity = cart_item.quantity,
+                name = cart_item.product.name,
                 price = cart_item.product.price,
                 product_id = cart_item.product_id,
                 order_id = new_order.id
@@ -154,3 +212,6 @@ class OrderService:
         # Update the order status
         order.status = order_status
         order.save()
+
+
+        
