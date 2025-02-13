@@ -49,9 +49,20 @@ product_image_model = product_ns.model('ProductImage', {
 class ProductResource(Resource):    
     @handle_exceptions
     def get(self): # Get all products
-        products = ProductService.get_all_products()        
+        page = request.args.get('page', 1, type=int) # Get the page number from the query string
+        category_id = request.args.get('category_id', type=int) # Get the category id from the query string
+        sort_by = request.args.get('sort_by', type=str) # Get the sort by value from the query string
+
+        results = ProductService.get_all_products(page, per_page=9, category_id=category_id, sort_by=sort_by)        
         
-        return marshal(products, product_shop_model), 200
+        response = {
+            'products': marshal(results['products'], product_shop_model),
+            'total_pages': results['total_pages'],
+            'current_page': results['current_page'],
+            'total_products': results['total_products']
+        }
+
+        return response, 200
         
 @product_ns.route('/<int:product_id>', methods=['GET'])
 class ProductResource(Resource):
@@ -103,9 +114,18 @@ class AdminProductResource(Resource):
     @admin_required()
     @handle_exceptions
     def get(self): # Get all products for admin
-        products = ProductService.get_all_admin_products()
+        page = request.args.get('page', 1, type=int) # Get the page number from the query string
 
-        return marshal(products, product_admin_model), 200
+        results = ProductService.get_all_admin_products(page)
+
+        response = {
+            'products': marshal(results['products'], product_admin_model),
+            'total_pages': results['total_pages'],
+            'current_page': results['current_page'],
+            'total_products': results['total_products']
+        }
+
+        return response, 200
 
 @product_ns.route('/admin/<int:product_id>', methods=['PUT', 'DELETE'])
 class AdminProductResource(Resource):

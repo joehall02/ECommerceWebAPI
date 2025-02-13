@@ -5,6 +5,7 @@ from flask_jwt_extended import jwt_required
 from decorators import admin_required
 from services.order_service import OrderService
 from decorators import handle_exceptions
+from models import User
 import stripe
 
 order_ns = Namespace('order', description='Administrator operations')
@@ -25,12 +26,20 @@ order_model = order_ns.model('Order', {
 })
     
 order_item_model = order_ns.model('OrderItem', {
-    'id': fields.Integer(required=True),
     'quantity': fields.Integer(required=True),
     'name': fields.String(required=True),
     'price': fields.Float(required=True),
+    'product_image': fields.String(), # This field is not required
     'product_id': fields.Integer(), # This field is not required, if product is deleted product_id is set to null
     'order_id': fields.Integer(required=True),
+})
+
+order_admin_model = order_ns.model('OrderAdmin', {
+    'id': fields.Integer(required=True),
+    'order_date': fields.Date(required=True),
+    'total_price': fields.Float(required=True),
+    'status': fields.String(required=True),
+    'full_name': fields.String(required=True),
 })
 
 combined_model = order_ns.model('Combined', {
@@ -38,15 +47,22 @@ combined_model = order_ns.model('Combined', {
     'order_items': fields.List(fields.Nested(order_item_model)),
 })
 
+combined_admin_model = order_ns.model('CombinedAdmin', {
+    'order': fields.Nested(order_model),
+    'order_items': fields.List(fields.Nested(order_item_model)),
+    'customer_name': fields.String(required=True),
+    'customer_email': fields.String(required=True),
+})
+
 # Define the routes for order operations
-@order_ns.route('/', methods=['POST', 'GET'])
+@order_ns.route('/', methods=['GET'])
 class OrderResource(Resource):
     @jwt_required()
     @handle_exceptions
     def get(self): # Get all orders        
         orders = OrderService.get_all_orders()        
         
-        return marshal(orders, order_model), 200
+        return marshal(orders, combined_model), 200
 
 @order_ns.route('/checkout', methods=['POST'])
 class OrderResource(Resource):
@@ -64,10 +80,10 @@ class OrderResource(Resource):
 class OrderResource(Resource):
     @jwt_required()
     @handle_exceptions
-    def get(self, order_id): # Get an order and its order items        
+    def get(self, order_id): # Get an order, its order items and customer details
         order = OrderService.get_order(order_id)        
         
-        return marshal(order, combined_model), 200
+        return marshal(order, combined_admin_model), 200
 
 @order_ns.route('/admin', methods=['GET'])
 class AdminOrderResource(Resource):
@@ -75,9 +91,18 @@ class AdminOrderResource(Resource):
     @admin_required()
     @handle_exceptions
     def get(self): # Get all customer orders        
-        orders = OrderService.get_all_customer_orders()        
+        page = request.args.get('page', 1, type=int) # Get the page number from the query string
+
+        results = OrderService.get_all_customer_orders(page)        
         
-        return marshal(orders, order_model), 200
+        response = {
+            'orders': marshal(results['orders'], order_admin_model),
+            'total_pages': results['total_pages'],
+            'current_page': results['current_page'],
+            'total_orders': results['total_orders']
+        }
+
+        return response, 200
 
 @order_ns.route('/admin/<int:order_id>', methods=['PUT'])
 class AdminOrderResource(Resource):  
@@ -121,6 +146,7 @@ class OrderResource(Resource):
             city = metadata['city']
             postcode = metadata['postcode']
 
+            
             # Create a new order
             data = {
                 'user_id': user_id,
@@ -131,6 +157,15 @@ class OrderResource(Resource):
                 'postcode': postcode
             }
 
+            # Extract the stripe customer id
+            stripe_customer_id = session['customer']
+
+            user = User.query.get(user_id)
+
+            if user:
+                user.stripe_customer_id = stripe_customer_id
+                user.save()
+                
             OrderService.create_order(data)
             
         return {'message': 'Webhook received'}, 200

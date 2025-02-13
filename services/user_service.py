@@ -156,3 +156,85 @@ class UserService:
         user.save()
 
         return user
+    
+    @staticmethod
+    def edit_name(data):
+        # Check if the data is provided
+        if not data:
+            raise ValidationError('No data provided')
+        
+        # Validate the request data against the sign up schema
+        valid_data = signup_schema.load(data, partial=True)
+
+        # Get current user
+        current_user_id = get_jwt_identity()
+
+        user = User.query.filter_by(id=current_user_id).first()
+
+        if not user:
+            raise ValidationError('User not found')
+        
+        # Update the users name
+        user.full_name = valid_data['full_name']
+
+        user.save()
+
+        return user
+
+    @staticmethod
+    def delete_account():
+        # Get current user
+        current_user_id = get_jwt_identity()
+
+        user = User.query.filter_by(id=current_user_id).first()
+
+        if not user:
+            raise ValidationError('User not found')
+        
+        # If the user has an orders that are not delivered, do not allow the user to delete their account
+        if user.orders:
+            for order in user.orders:
+                if order.status != 'Delivered':
+                    raise ValidationError('Cannot delete account with pending orders')
+        
+        user.delete()
+
+        return user
+        
+    @staticmethod
+    def get_full_name():
+        # Get current user
+        current_user_id = get_jwt_identity()
+
+        user = User.query.filter_by(id=current_user_id).first()
+
+        if not user:
+            raise ValidationError('User not found')
+        
+        return {'full_name': user.full_name}
+    
+    @staticmethod
+    def edit_password(data):
+        # Check if the data is provided
+        if not data:
+            raise ValidationError('No data provided')
+        
+        # Get current user
+        current_user_id = get_jwt_identity()
+
+        user = User.query.filter_by(id=current_user_id).first()
+
+        if not user:
+            raise ValidationError('User not found')
+        
+        # Check if the current password is correct
+        if not check_password_hash(user.password, data['current_password']):
+            raise ValidationError('Current password invalid')
+        
+        # Update the users password
+        user.password = generate_password_hash(data['new_password'])
+
+        user.save()
+
+        return user
+

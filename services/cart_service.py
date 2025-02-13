@@ -39,6 +39,7 @@ class CartService:
                     'id': product.id,
                     'name': product.name,
                     'price': product.price,
+                    'stock': product.stock,
                     'image_path': image_path,
                     'category_name': product.category.name
                 }
@@ -106,12 +107,9 @@ class CartService:
         if not product:
             raise ValidationError('Product not found')
         
-        # Check if the cart product already exists, if it does, increment the quantity by 1
-        # existing_cart_product = CartProduct.query.filter_by(cart_id=cart.id, product_id=product_id).first()
-        # if existing_cart_product:
-        #     existing_cart_product.quantity += 1
-        #     existing_cart_product.save()
-        #     return existing_cart_product
+        # Check if the product is in stock
+        if product.stock < valid_data['quantity']:
+            raise ValidationError('Product is out of stock')
 
         # If the cart product already exists, change the quantity to the new quantity
         existing_cart_product = CartProduct.query.filter_by(cart_id=cart.id, product_id=product_id).first()
@@ -126,12 +124,6 @@ class CartService:
             product_id = product_id,
             cart_id = cart.id
         )
-
-        # cart_product = CartProduct(
-        #     quantity = 1, # Starts with a quantity of 1 since the product is being added for the first time
-        #     product_id = product_id,
-        #     cart_id = cart.id
-        # )
 
         cart_product.save()
 
@@ -148,12 +140,6 @@ class CartService:
         # Check if the cart product exists
         if not cart_product:
             raise ValidationError('Cart product not found')
-        
-        # # If the cart product has a quantity greater than 1, decrement the quantity by 1
-        # if cart_product.quantity > 1:
-        #     cart_product.quantity -= 1
-        #     cart_product.save()
-        #     return cart_product
         
         # If the cart product has a quantity of 1, delete the cart product
         cart_product.delete()

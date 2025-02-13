@@ -136,8 +136,28 @@ class ProductService:
         return new_product
 
     @staticmethod
-    def get_all_products():
-        products = Product.query.all()
+    def get_all_products(page=1, per_page=9, category_id=None, sort_by=None):
+        query = Product.query.filter(Product.stock > 0) # Get all products with stock greater than 0
+        
+        # Check if a category id is provided
+        if category_id:
+            query = query.filter_by(category_id=category_id)
+
+        # Apply sorting
+        if sort_by == 'Name (A-Z)':
+            query = query.order_by(Product.name.asc())
+        elif sort_by == 'Name (Z-A)':
+            query = query.order_by(Product.name.desc())
+        elif sort_by == 'Price (Low to High)':
+            query = query.order_by(Product.price.asc())
+        elif sort_by == 'Price (High to Low)':
+            query = query.order_by(Product.price.desc())
+        else:
+            # Default sorting by id in descending order, i.e. latest products first
+            query = query.order_by(Product.id.desc())
+
+        products_query = query.paginate(page=page, per_page=per_page, error_out=False) # Paginate the query
+        products = products_query.items
 
         # Check if there are any products
         if not products:
@@ -146,7 +166,7 @@ class ProductService:
         # Prepare the data to be serialized
         product_list = []
         
-        for product in products:
+        for product in products:        
             image_path = product.product_images[0].image_path if product.product_images else None # Get the first image path if it exists
             product_data = {
                 'id': product.id,
@@ -160,11 +180,17 @@ class ProductService:
         # Serialize the data
         products = product_shop_schema.dump(product_list, many=True)
 
-        return products
+        return {
+            'products': products,
+            'total_pages': products_query.pages,
+            'current_page': products_query.page,
+            'total_products': products_query.total
+        }
     
     @staticmethod
-    def get_all_admin_products():
-        products = Product.query.all()
+    def get_all_admin_products(page=1, per_page=10):
+        products_query = Product.query.paginate(page=page, per_page=per_page, error_out=False) 
+        products = products_query.items
 
         # Check if there are any products
         if not products:
@@ -173,7 +199,12 @@ class ProductService:
         # Serialize the data
         products = product_admin_schema.dump(products, many=True)
 
-        return products
+        return {
+            'products': products,
+            'total_pages': products_query.pages,
+            'current_page': products_query.page,
+            'total_products': products_query.total
+        }
 
     @staticmethod
     def get_product(product_id):

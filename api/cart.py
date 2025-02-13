@@ -23,6 +23,7 @@ product_model = cart_ns.model('Product', {
     'id': fields.Integer(required=True),
     'name': fields.String(required=True),
     'price': fields.Float(required=True),
+    'stock': fields.Integer(required=True),
     'image_path': fields.String(required=True),
     'category_name': fields.String(required=True),
 })
@@ -39,7 +40,7 @@ class CartProductResource(Resource):
     @handle_exceptions
     def get(self): # Get all products in the cart        
         products = CartService.get_all_products_in_cart()        
-        
+
         return marshal(products, combined_model), 200
 
 @cart_ns.route('/<int:cart_product_id>', methods=['DELETE', 'PUT'])

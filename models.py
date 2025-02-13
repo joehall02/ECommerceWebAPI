@@ -10,7 +10,7 @@ class User(db.Model):
     role = db.Column(db.String(50), nullable=False)
 
     # Relationships
-    addresses = db.relationship('Address', backref='user', lazy=True) 
+    addresses = db.relationship('Address', backref='user', lazy=True, cascade="all, delete", passive_deletes=True) # cascade="all, delete" ensures that when a user is deleted, all addresses are also deleted and passive_deletes=True ensures that the database handles the deletion of the addresses
     carts = db.relationship('Cart', backref='user', lazy=True, uselist=False, cascade="all, delete", passive_deletes=True) # uselist=False ensures that a user can only have one cart, cascade="all, delete" ensures that when a user is deleted, their cart is also deleted, and passive_deletes=True ensures that the database handles the deletion of the cart
     orders = db.relationship('Order', backref='user', lazy=True)
 
@@ -36,7 +36,7 @@ class Address(db.Model):
     is_default = db.Column(db.Boolean, nullable=False)
 
     # Foreign key
-    user_id = db.Column(db.Integer, db.ForeignKey('User.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('User.id', ondelete='CASCADE'), nullable=False)
 
     def __repr__(self):
         return f'<Address {self.id} {self.address_line_1}>'
@@ -71,7 +71,7 @@ class Address(db.Model):
 class Category(db.Model):
     __tablename__ = 'Category'
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
+    name = db.Column(db.String(20), nullable=False)
 
     # Relationships
     products = db.relationship('Product', backref='category', lazy=True, cascade="all, delete", passive_deletes=True) # cascade="all, delete" ensures that when a category is deleted, all products in that category are also deleted and passive_deletes=True ensures that the database handles the deletion of the products
@@ -208,7 +208,7 @@ class Order(db.Model):
     postcode = db.Column(db.String(20), nullable=False)
     
     # Foreign keys
-    user_id = db.Column(db.Integer, db.ForeignKey('User.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('User.id'), nullable=True)  # Allow NULL
 
     # Relationships
     order_items = db.relationship('OrderItem', backref='order', lazy=True, cascade="all, delete", passive_deletes=True) # cascade="all, delete" ensures that when an order is deleted, all order items are also deleted and passive_deletes=True ensures that the database handles the deletion of the order items    

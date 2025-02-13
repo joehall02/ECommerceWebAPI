@@ -1,15 +1,17 @@
 from datetime import date
 from flask import jsonify, request
 from marshmallow import ValidationError
-from models import Order, OrderItem, Cart
+from models import Order, OrderItem, Cart, ProductImage, Product, User
 from flask_jwt_extended import get_jwt_identity
-from schemas import OrderSchema, OrderItemSchema, OrderItemCombinedSchema
+from schemas import OrderSchema, OrderItemSchema, OrderItemCombinedSchema, OrderAdminSchema, OrderItemCombinedAdminSchema
 import stripe
 
 # Define the schema instances
 order_schema = OrderSchema()
 order_item_schema = OrderItemSchema()
 order_item_combined_schema = OrderItemCombinedSchema()
+order_admin_schema = OrderAdminSchema()
+order_item_combined_admin_schema = OrderItemCombinedAdminSchema()
 
 # Services
 class OrderService:
@@ -22,14 +24,21 @@ class OrderService:
         # Validate the data against the order schema
         valid_data = order_schema.load(data, partial=True) # Partial allows for missing fields
 
-        user = get_jwt_identity()
+        # Check that an address is provided by checking if the strings are empty
+        if not valid_data['full_name'] or not valid_data['address_line_1'] or not valid_data['city'] or not valid_data['postcode']:
+            raise ValidationError('Address not provided')
+
+        user_id = get_jwt_identity()
+
+        # Get the user
+        user = User.query.get(user_id)
 
         # Check if the user exists
-        if not user:
+        if not user_id:
             raise ValidationError('User not found')
 
         # Get the cart
-        cart = Cart.query.filter_by(user_id=user).first()
+        cart = Cart.query.filter_by(user_id=user_id).first()
 
         # Get the cart items from the data
         cart_items = Cart.query.get(cart.id).cart_products
@@ -41,6 +50,10 @@ class OrderService:
         # Create line items for Stripe checkout session
         line_items = []
         for cart_item in cart_items:
+            # Check the stock of the product
+            if cart_item.product.stock < cart_item.quantity:
+                raise ValidationError(cart_item.product.name + ' only has ' + str(cart_item.product.stock) + ' left in stock')
+
             line_items.append({
                 'price': cart_item.product.stripe_price_id, # Stripe price id
                 'quantity': cart_item.quantity
@@ -53,8 +66,12 @@ class OrderService:
             mode='payment',
             success_url='http://localhost:3000/checkout/success',
             cancel_url='http://localhost:3000/checkout/cancel',
+            customer_email=user.email if not user.stripe_customer_id else None, # Attach the email to the session if the user doesn't have a stripe customer id
+            customer=user.stripe_customer_id if user.stripe_customer_id else None, # Attach the customer to the session if one exists
+            customer_creation='always' if not user.stripe_customer_id else None, # Create a new customer if one doesn't exist            
+
             metadata={
-                'user_id': user,
+                'user_id': user.id,
                 'full_name': valid_data['full_name'],
                 'address_line_1': valid_data['address_line_1'],
                 'address_line_2': valid_data['address_line_2'] if 'address_line_2' in valid_data else None,
@@ -115,6 +132,14 @@ class OrderService:
             )
             new_order_item.save()
 
+            # Delete the cart item
+            cart_item.delete()
+
+            # Update the product stock
+            product = Product.query.get(cart_item.product_id)
+
+            product.stock -= new_order_item.quantity
+
             # Update the total price of the order
             new_order.total_price += new_order_item.price * new_order_item.quantity
 
@@ -137,8 +162,29 @@ class OrderService:
         if not orders:
             raise ValidationError('No orders found')
         
+        entire_order = []
+
+        # Get the order items for each order
+        for order in orders:
+            order_items = []
+
+            for order_item in order.order_items:
+
+                # Get the product image
+                product_image = ProductImage.query.filter_by(product_id=order_item.product_id).first()
+
+                if product_image:
+                    order_item.product_image = product_image.image_path                
+
+                order_items.append(order_item)
+
+            entire_order.append({
+                'order': order,
+                'order_items': order_items
+            })
+        
         # Serialize the data
-        orders = order_schema.dump(orders, many=True)
+        orders = order_item_combined_schema.dump(entire_order, many=True)
     
         return orders
     
@@ -158,31 +204,60 @@ class OrderService:
         order_items = []
 
         for order_item in order.order_items:
+            # Get the product image
+            product_image = ProductImage.query.filter_by(product_id=order_item.product_id).first()
+
+            if product_image:
+                order_item.product_image = product_image.image_path
+            
             order_items.append(order_item)
 
-        order = {
-            'order': order,
-            'order_items': order_items
-        }
+        # Get customer name and email if user exists
+        if order.user:
+            customer = order.user
 
-        # Serialize the data
-        order = order_item_combined_schema.dump(order)        
+            order = {
+                'order': order,
+                'order_items': order_items,
+                'customer_name': customer.full_name,
+                'customer_email': customer.email
+            }
 
-        # Return the order and order items
-        return order
+            # Serialize the data
+            order = order_item_combined_admin_schema.dump(order)        
+
+            # Return the order and order items
+            return order
+        else:
+            order = {
+                'order': order,
+                'order_items': order_items
+            }
+
+            # Serialize the data
+            order = order_item_combined_admin_schema.dump(order)        
+
+            # Return the order and order items
+            return order       
 
     @staticmethod
-    def get_all_customer_orders():
-        orders = Order.query.all()
+    def get_all_customer_orders(page=1, per_page=10):
+        orders_query = Order.query.paginate(page=page, per_page=per_page, error_out=False)
+        orders = orders_query.items
 
         # Check if there are any orders
         if not orders:
             raise ValidationError('No orders found')
         
         # Serialize the data
-        orders = order_schema.dump(orders, many=True)
+        orders = order_admin_schema.dump(orders, many=True)
         
-        return orders
+        return {
+            'orders': orders,
+            'total_pages': orders_query.pages,
+            'current_page': orders_query.page,
+            'total_orders': orders_query.total
+        }
     
     @staticmethod
     def update_order_status(data, order_id):

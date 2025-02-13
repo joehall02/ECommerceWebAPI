@@ -31,7 +31,26 @@ class CategoryService:
         return new_category
     
     @staticmethod
-    def get_categories():
+    def get_categories(page=1, per_page=10):
+        categories_query = Category.query.paginate(page=page, per_page=per_page, error_out=False)
+        categories = categories_query.items
+
+        # Check if there are any categories
+        if not categories:
+            raise ValidationError('No categories found')
+
+        # Serialize the categories, .dump() is used to serialize the data. many=True because it's a list, not a single object. 
+        categories = category_schema.dump(categories, many=True)
+
+        return {
+            'categories': categories,
+            'total_pages': categories_query.pages,
+            'current_page': categories_query.page,
+            'total_categories': categories_query.total
+        }
+    
+    @staticmethod
+    def get_all_categories():
         categories = Category.query.all()
 
         # Check if there are any categories

@@ -24,12 +24,11 @@ product_model = category_ns.model('Product', {
     'category_id': fields.Integer(required=True),
 })
 
-# Define the routes for category operations
 @category_ns.route('/', methods=['GET'])
 class CategoryResource(Resource):
     @handle_exceptions
     def get(self): # Get all categories                 
-        categories = CategoryService.get_categories()        
+        categories = CategoryService.get_all_categories()        
 
         return marshal(categories, category_model), 200
 
@@ -47,7 +46,7 @@ class CategoryResource(Resource):
                          
     #     return marshal(products, product_model), 200
 
-@category_ns.route('/admin', methods=['POST'])
+@category_ns.route('/admin', methods=['POST', 'GET'])
 class AdminCategoryResource(Resource):
     @jwt_required()
     @admin_required()
@@ -58,6 +57,23 @@ class AdminCategoryResource(Resource):
         CategoryService.create_category(data)        
         
         return {'message': 'Category created successfully'}, 201
+    
+    @jwt_required()
+    @admin_required()
+    @handle_exceptions
+    def get(self): # Get all categories               
+        page = request.args.get('page', 1, type=int) # Get the page number from the query string
+
+        results = CategoryService.get_categories(page) 
+
+        response = {
+            'categories': marshal(results['categories'], category_model),
+            'total_pages': results['total_pages'],
+            'current_page': results['current_page'],
+            'total_categories': results['total_categories']
+        }
+
+        return response, 200
     
 @category_ns.route('/admin/<int:category_id>', methods=['PUT', 'DELETE'])
 class AdminCategoryResource(Resource):

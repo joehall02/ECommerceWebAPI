@@ -30,6 +30,10 @@ class AddressService:
                 address.is_default = False
                 address.save()
 
+        # If this is the first address, set it as default
+        if not Address.query.filter_by(user_id=user).first():
+            valid_data['is_default'] = True
+
         new_address = Address(
             full_name = valid_data['full_name'],
             address_line_1 = valid_data['address_line_1'],
@@ -87,7 +91,7 @@ class AddressService:
         address = Address.query.filter_by(user_id=user, is_default=True).first()
 
         if not address:
-            raise ValidationError('Default address not found')
+            raise ValidationError('Address not found')
         
         address = address_schema.dump(address)
 
