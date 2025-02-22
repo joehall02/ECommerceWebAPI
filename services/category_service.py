@@ -32,7 +32,8 @@ class CategoryService:
     
     @staticmethod
     def get_categories(page=1, per_page=10):
-        categories_query = Category.query.paginate(page=page, per_page=per_page, error_out=False)
+        # Paginate the categories. Order by id in descending order to get the latest categories first
+        categories_query = Category.query.order_by(Category.id.desc()).paginate(page=page, per_page=per_page, error_out=False)
         categories = categories_query.items
 
         # Check if there are any categories

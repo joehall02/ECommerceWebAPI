@@ -1,9 +1,12 @@
+from datetime import datetime
 from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity, set_access_cookies, set_refresh_cookies, get_csrf_token
-from models import User, Cart
+from sqlalchemy import extract
+from models import User, Cart, Order
 from flask import current_app, make_response, jsonify
 from marshmallow import ValidationError
 from schemas import SignupSchema, LoginSchema
 from werkzeug.security import generate_password_hash, check_password_hash
+from exts import db
 
 # Define the schema instances
 signup_schema = SignupSchema()
@@ -237,4 +240,51 @@ class UserService:
         user.save()
 
         return user
+    
+    @staticmethod
+    def get_dashboard_data():
+        # Get current user
+        current_user_id = get_jwt_identity()
 
+        user = User.query.filter_by(id=current_user_id).first()
+
+        if not user:
+            raise ValidationError('User not found')
+        
+        # Get the total number of users
+        total_users = User.query.count()
+
+        # Get the total number of ongoing orders
+        ongoing_orders = Order.query.filter(Order.status.in_(['Processing', 'Shipped'])).count()
+
+        # Get the total number of orders
+        orders_overall = Order.query.count()
+
+        # Get the total revenue from all orders
+        total_revenue = Order.query.with_entities(Order.total_price).all()
+        total_revenue = sum(float(revenue[0]) for revenue in total_revenue)
+
+        # Get the number of orders per month for the current year
+        current_year = datetime.now().year
+        orders_per_month = (
+            db.session.query(
+                extract('month', Order.order_date).label('month'),
+                db.func.count(Order.id).label('order_count')
+            )
+            .filter(extract('year', Order.order_date) == current_year)
+            .group_by('month')
+            .order_by('month')
+            .all()
+        )
+
+        orders_per_month_data = {month: 0 for month in range(1, 13)}
+        for month, order_count in orders_per_month:
+            orders_per_month_data[month] = order_count
+
+        return {
+            'total_users': total_users,
+            'ongoing_orders': ongoing_orders,
+            'orders_overall': orders_overall,
+            'total_revenue': total_revenue,
+            'graph_data': orders_per_month_data
+        }

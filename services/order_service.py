@@ -68,7 +68,7 @@ class OrderService:
             cancel_url='http://localhost:3000/checkout/cancel',
             customer_email=user.email if not user.stripe_customer_id else None, # Attach the email to the session if the user doesn't have a stripe customer id
             customer=user.stripe_customer_id if user.stripe_customer_id else None, # Attach the customer to the session if one exists
-            customer_creation='always' if not user.stripe_customer_id else None, # Create a new customer if one doesn't exist            
+            customer_creation='always' if not user.stripe_customer_id else None, # Create a new customer if one doesn't exist
 
             metadata={
                 'user_id': user.id,
@@ -149,14 +149,17 @@ class OrderService:
         return new_order
     
     @staticmethod
-    def get_all_orders():
+    def get_all_orders(page=1, per_page=6):
         user = get_jwt_identity()
 
         # Check if the user exists
         if not user:
             raise ValidationError('User not found')
 
-        orders = Order.query.filter_by(user_id=user).all()
+        # Get the orders for the user, order by order date in descending order, i.e. latest order first
+        query = Order.query.filter_by(user_id=user).order_by(Order.order_date.desc()) 
+        orders_query = query.paginate(page=page, per_page=per_page, error_out=False)
+        orders = orders_query.items
 
         # Check if there are any orders
         if not orders:
@@ -186,7 +189,12 @@ class OrderService:
         # Serialize the data
         orders = order_item_combined_schema.dump(entire_order, many=True)
     
-        return orders
+        return {
+            'orders': orders,
+            'total_pages': orders_query.pages,
+            'current_page': orders_query.page,
+            'total_orders': orders_query.total
+        }
     
     @staticmethod
     def get_order(order_id):
@@ -241,8 +249,19 @@ class OrderService:
             return order       
 
     @staticmethod
-    def get_all_customer_orders(page=1, per_page=10):
-        orders_query = Order.query.paginate(page=page, per_page=per_page, error_out=False)
+    def get_all_customer_orders(page=1, per_page=10, status=None):
+        # Apply sorting
+        if status == 'Processing':
+            query = Order.query.filter_by(status='Processing').order_by(Order.id.desc()) 
+        elif status == 'Shipped':
+            query = Order.query.filter_by(status='Shipped').order_by(Order.id.desc())
+        elif status == 'Delivered':
+            query = Order.query.filter_by(status='Delivered').order_by(Order.id.desc())
+        else:
+            query = Order.query.order_by(Order.id.desc())
+
+
+        orders_query = query.paginate(page=page, per_page=per_page, error_out=False)
         orders = orders_query.items
 
         # Check if there are any orders

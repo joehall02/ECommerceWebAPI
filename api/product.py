@@ -115,8 +115,9 @@ class AdminProductResource(Resource):
     @handle_exceptions
     def get(self): # Get all products for admin
         page = request.args.get('page', 1, type=int) # Get the page number from the query string
+        category_id = request.args.get('category_id', type=int) # Get the category id from the query string
 
-        results = ProductService.get_all_admin_products(page)
+        results = ProductService.get_all_admin_products(page, per_page=10, category_id=category_id)
 
         response = {
             'products': marshal(results['products'], product_admin_model),

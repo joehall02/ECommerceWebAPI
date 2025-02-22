@@ -4,7 +4,7 @@ from flask import current_app, request, jsonify
 from flask_restx import Namespace, Resource, fields
 from marshmallow import ValidationError
 from services.user_service import UserService   
-from decorators import handle_exceptions 
+from decorators import handle_exceptions, admin_required
 
 user_ns = Namespace('user', description='User operations')
 
@@ -119,3 +119,21 @@ class UserResource(Resource):
         response = UserService.get_full_name()
 
         return response
+    
+@user_ns.route('/admin', methods=['GET'])
+class AdminResource(Resource):
+    @jwt_required()
+    @admin_required()
+    @handle_exceptions
+    def get(self):
+        results = UserService.get_dashboard_data()
+
+        response = {
+            'total_users': results['total_users'],
+            'ongoing_orders': results['ongoing_orders'],
+            'orders_overall': results['orders_overall'],
+            'total_revenue': results['total_revenue'],
+            'graph_data': results['graph_data']
+        }
+
+        return response, 200

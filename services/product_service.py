@@ -160,8 +160,8 @@ class ProductService:
         products = products_query.items
 
         # Check if there are any products
-        if not products:
-            raise ValidationError('No products found')
+        # if not products:
+        #     raise ValidationError('No products in stock at the moment. Please come back later!')
         
         # Prepare the data to be serialized
         product_list = []
@@ -188,8 +188,14 @@ class ProductService:
         }
     
     @staticmethod
-    def get_all_admin_products(page=1, per_page=10):
-        products_query = Product.query.paginate(page=page, per_page=per_page, error_out=False) 
+    def get_all_admin_products(page=1, per_page=10, category_id=None):
+        query = Product.query.order_by(Product.id.desc()) # Get all products in descending order of id (latest products first)
+
+        if category_id:
+            query = query.filter_by(category_id=category_id)
+
+        # Paginate the query
+        products_query = query.paginate(page=page, per_page=per_page, error_out=False)
         products = products_query.items
 
         # Check if there are any products
@@ -272,6 +278,10 @@ class ProductService:
             except Exception as e:
                 raise ValidationError(f"Failed to update product in Stripe: {str(e)}")
 
+        if 'stock' in valid_data:
+            if valid_data['stock'] < 0:
+                raise ValidationError('Stock cannot be a negative number')
+
         # Check if price is provided, if so, update the stripe price
         if 'price' in valid_data:
             try:
@@ -334,6 +344,10 @@ class FeaturedProductService:
         # Check if the product id is provided
         if not product_id:
             raise ValidationError('No product id provided')
+
+        # If theres already 4 featured products, return an error
+        if len(FeaturedProduct.query.all()) >= 4:
+            raise ValidationError('There are already 4 featured products')
 
         product = Product.query.get(product_id)
 

@@ -23,9 +23,14 @@ class AddressService:
         if not user:
             raise ValidationError('User not found')
         
+        addresses = Address.query.filter_by(user_id=user).all()
+
+        # If the user already has 5 addresses, raise an error
+        if len(addresses) >= 5:
+            raise ValidationError('You have reached the maximum number of addresses')
+
         # If is_default is True, set all other addresses to False
         if valid_data['is_default'] == True:
-            addresses = Address.query.filter_by(user_id=user).all()
             for address in addresses:
                 address.is_default = False
                 address.save()
@@ -55,7 +60,8 @@ class AddressService:
         if not user:
             raise ValidationError('User not found')
         
-        addresses = Address.query.filter_by(user_id=user).all()
+        # Get all addresses for the user, order by is_default in descending order
+        addresses = Address.query.filter_by(user_id=user).order_by(Address.is_default.desc()).all()
 
         if not addresses:
             raise ValidationError('Addresses not found')
@@ -91,7 +97,7 @@ class AddressService:
         address = Address.query.filter_by(user_id=user, is_default=True).first()
 
         if not address:
-            raise ValidationError('Address not found')
+            raise ValidationError('Default address not found')
         
         address = address_schema.dump(address)
 

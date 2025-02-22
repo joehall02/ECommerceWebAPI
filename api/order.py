@@ -60,9 +60,18 @@ class OrderResource(Resource):
     @jwt_required()
     @handle_exceptions
     def get(self): # Get all orders        
-        orders = OrderService.get_all_orders()        
+        page = request.args.get('page', 1, type=int) # Get the page number from the query string        
+
+        results = OrderService.get_all_orders(page)        
         
-        return marshal(orders, combined_model), 200
+        response = {
+            'orders': marshal(results['orders'], combined_model),
+            'total_pages': results['total_pages'],
+            'current_page': results['current_page'],
+            'total_orders': results['total_orders']
+        }
+
+        return response, 200
 
 @order_ns.route('/checkout', methods=['POST'])
 class OrderResource(Resource):
@@ -76,15 +85,6 @@ class OrderResource(Resource):
 
         return {'session_id': checkout_session['session_id']}, 200
 
-@order_ns.route('/<int:order_id>', methods=['GET'])
-class OrderResource(Resource):
-    @jwt_required()
-    @handle_exceptions
-    def get(self, order_id): # Get an order, its order items and customer details
-        order = OrderService.get_order(order_id)        
-        
-        return marshal(order, combined_admin_model), 200
-
 @order_ns.route('/admin', methods=['GET'])
 class AdminOrderResource(Resource):
     @jwt_required()
@@ -92,8 +92,9 @@ class AdminOrderResource(Resource):
     @handle_exceptions
     def get(self): # Get all customer orders        
         page = request.args.get('page', 1, type=int) # Get the page number from the query string
+        status = request.args.get('status', type=str) # Get the status from the query string
 
-        results = OrderService.get_all_customer_orders(page)        
+        results = OrderService.get_all_customer_orders(page, per_page=10, status=status)        
         
         response = {
             'orders': marshal(results['orders'], order_admin_model),
@@ -104,8 +105,16 @@ class AdminOrderResource(Resource):
 
         return response, 200
 
-@order_ns.route('/admin/<int:order_id>', methods=['PUT'])
+@order_ns.route('/admin/<int:order_id>', methods=['PUT', 'GET'])
 class AdminOrderResource(Resource):  
+    @jwt_required()
+    @admin_required()
+    @handle_exceptions
+    def get(self, order_id): # Get an order, its order items and customer details
+        order = OrderService.get_order(order_id)        
+        
+        return marshal(order, combined_admin_model), 200
+
     @jwt_required()
     @admin_required()
     @handle_exceptions
