@@ -49,8 +49,9 @@ class UserService:
         new_user = User(
             full_name=valid_data['full_name'],
             password=generate_password_hash(valid_data['password']), # Generate a password hash before storing it
-            email=valid_data['email'],            
-            role=role
+            email=valid_data['email'],
+            role=role,
+            created_at=datetime.now()
         )
         new_user.save()
 
@@ -62,6 +63,41 @@ class UserService:
 
         return new_user
     
+    @staticmethod
+    def create_guest_user():
+        # Create a new guest user account
+        new_user = User(
+            full_name='Guest User',
+            password=generate_password_hash('guest'), # Generate a password hash before storing it
+            role='guest',
+            created_at=datetime.now()
+        )
+        new_user.save()
+
+        # Create a cart for the user
+        new_cart = Cart(
+            user_id=new_user.id
+        )
+
+        new_cart.save()
+
+        # Create am access token for the guest user
+        access_token = create_access_token(identity=str(new_user.id), expires_delta=current_app.config['JWT_ACCESS_TOKEN_EXPIRES']) # Create an access token for the user with a 1 hour expiry
+        refresh_token = create_refresh_token(identity=str(new_user.id), expires_delta=current_app.config['JWT_REFRESH_TOKEN_EXPIRES']) # Create a refresh token for the user
+
+        # Create a response
+        response = make_response(jsonify({'message': 'Guest user created', 'access_token': access_token, 'refresh_token': refresh_token}))
+
+        # Set the x-csrf-token header
+        response.headers['x-access-csrf-token'] = get_csrf_token(access_token)
+        response.headers['x-refresh-csrf-token'] = get_csrf_token(refresh_token)
+
+        # Set HTTP-only cookies for the access and refresh tokens
+        set_access_cookies(response, access_token, max_age=current_app.config['JWT_ACCESS_TOKEN_EXPIRES'].total_seconds())
+        set_refresh_cookies(response, refresh_token, max_age=current_app.config['JWT_REFRESH_TOKEN_EXPIRES'].total_seconds())
+
+        return new_user.id, response
+
     @staticmethod
     def login_user(data):
         # Check if data is provided
@@ -98,6 +134,7 @@ class UserService:
         if not current_user_id:
             logged_in = False
             is_admin = False
+            is_customer = False
         else:
             logged_in = True
 
@@ -105,15 +142,21 @@ class UserService:
             user = User.query.get(current_user_id)
             if user.role == 'admin':
                 is_admin = True
+                is_customer = False
+            elif user.role == 'customer':
+                is_customer = True
+                is_admin = False
             else:
                 is_admin = False
+                is_customer = False
 
         access_token = create_access_token(identity=current_user_id, expires_delta=current_app.config['JWT_ACCESS_TOKEN_EXPIRES']) # Create a new access token
 
-        response = make_response(jsonify(logged_in=logged_in, is_admin=is_admin))
+        response = make_response(jsonify(logged_in=logged_in, is_admin=is_admin, is_customer=is_customer))
 
         print("logged in: ", logged_in)
         print("is admin: ", is_admin)
+        print("is customer:", is_customer)
 
         # Set the x-csrf-token header
         response.headers['x-access-csrf-token'] = get_csrf_token(access_token)
@@ -263,6 +306,7 @@ class UserService:
         # Get the total revenue from all orders
         total_revenue = Order.query.with_entities(Order.total_price).all()
         total_revenue = sum(float(revenue[0]) for revenue in total_revenue)
+        total_revenue = round(total_revenue, 2) # Round the total revenue to 2 decimal places
 
         # Get the number of orders per month for the current year
         current_year = datetime.now().year

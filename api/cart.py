@@ -63,11 +63,11 @@ class CartProductDetailResource(Resource):
     
 @cart_ns.route('/<int:product_id>', methods=['POST'])
 class CartProductAddResource(Resource):
-    @jwt_required()
+    @jwt_required(optional=True) # Allow for unauthenticated guests users to add products to the cart
     @handle_exceptions
     def post(self, product_id): # Add a product to the cart        
         data = request.get_json()
 
-        CartService.add_product_to_cart(data, product_id)        
+        repsonse = CartService.add_product_to_cart(data, product_id)        
         
-        return {'message': 'Product added to cart successfully'}, 201
+        return repsonse

@@ -4,7 +4,7 @@ from flask import current_app, request, jsonify
 from flask_restx import Namespace, Resource, fields
 from marshmallow import ValidationError
 from services.user_service import UserService   
-from decorators import handle_exceptions, admin_required
+from decorators import handle_exceptions, admin_required, customer_required
 
 user_ns = Namespace('user', description='User operations')
 
@@ -73,6 +73,7 @@ class ResetPasswordResource(Resource):
 @user_ns.route('/edit-name', methods=['PUT'])
 class EditNameResource(Resource):
     @jwt_required()
+    @customer_required()
     @handle_exceptions
     def put(self): # Change the users name
         data = request.get_json()
@@ -84,6 +85,7 @@ class EditNameResource(Resource):
 @user_ns.route('/edit-password', methods=['PUT'])
 class EditPasswordResource(Resource):
     @jwt_required()
+    @customer_required()
     @handle_exceptions
     def put(self): # Change the users password
         data = request.get_json()
@@ -95,6 +97,7 @@ class EditPasswordResource(Resource):
 @user_ns.route('/delete-account', methods=['DELETE'])
 class DeleteAccountResource(Resource):
     @jwt_required()
+    @customer_required()
     @handle_exceptions
     def delete(self): # Delete the users account
         UserService.delete_account()
@@ -114,6 +117,7 @@ class RefreshResource(Resource):
 @user_ns.route('/', methods=['GET'])
 class UserResource(Resource):
     @jwt_required()
+    @customer_required()
     @handle_exceptions
     def get(self): # Get the user's name
         response = UserService.get_full_name()

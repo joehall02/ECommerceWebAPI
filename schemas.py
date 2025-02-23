@@ -53,6 +53,7 @@ class OrderSchema(Schema):
     address_line_2 = ma_fields.String(required=False, error_messages={'null': 'Address line 2 cannot be empty'})
     city = ma_fields.String(required=True, error_messages={'required': 'City is required', 'null': 'City cannot be empty'})
     postcode = ma_fields.String(required=True, error_messages={'required': 'Postcode is required', 'null': 'City cannot be empty'})
+    customer_email = ma_fields.String(required=True, error_messages={'required': 'Customer email is required', 'null': 'Customer email cannot be empty'})
     user_id = ma_fields.Integer(required=True, error_messages={'required': 'User ID is required', 'null': 'User ID cannot be empty'})
     
 # Order admin schema
@@ -79,8 +80,7 @@ class OrderItemCombinedSchema(Schema):
 class OrderItemCombinedAdminSchema(Schema):
     order = ma_fields.Nested(OrderSchema)
     order_items = ma_fields.List(ma_fields.Nested(OrderItemSchema)) # List of order items
-    customer_name = ma_fields.String(required=True, error_messages={'required': 'Customer name is required', 'null': 'Customer name cannot be empty'})
-    customer_email = ma_fields.String(required=True, error_messages={'required': 'Customer email is required', 'null': 'Customer email cannot be empty'})
+    customer_name = ma_fields.String(required=True, error_messages={'required': 'Customer name is required', 'null': 'Customer name cannot be empty'})    
 
 # Category schemas
 class CategorySchema(Schema):

@@ -1,7 +1,9 @@
+from flask import jsonify, make_response, current_app
 from marshmallow import ValidationError
 from models import Cart, CartProduct, Product
-from flask_jwt_extended import get_jwt_identity
+from flask_jwt_extended import get_jwt_identity, set_access_cookies, set_refresh_cookies
 from schemas import CartSchema, CartProductSchema, ProductSchema, ProductCartProductCombinedSchema
+from services.user_service import UserService
 
 # Define the schema instances
 cart_schema = CartSchema()
@@ -89,7 +91,12 @@ class CartService:
         # Validate the request data against the cart product schema
         valid_data = cart_product_schema.load(data, partial=True) # partial=True allows for partial data to be validated
 
+        # Get the user if JWT is provided, else create a guest user        
         user = get_jwt_identity()
+        
+        if not user:
+            user, guest_response = UserService.create_guest_user()
+            print("created guest user")
 
         # Check if the user exists
         if not user:
@@ -127,7 +134,21 @@ class CartService:
 
         cart_product.save()
 
-        return cart_product
+        # Serialise the cart product
+        cart_product_data = cart_product_schema.dump(cart_product)
+
+        # Create a response
+        response = make_response(jsonify(cart_product_data))
+
+        # If a guest user was created, set the user token to the response
+        if 'guest_response' in locals():
+            response.headers['x-access-csrf-token'] = guest_response.headers['x-access-csrf-token']
+            response.headers['x-refresh-csrf-token'] = guest_response.headers['x-refresh-csrf-token']
+            set_access_cookies(response, guest_response.json['access_token'], max_age=current_app.config['JWT_ACCESS_TOKEN_EXPIRES'].total_seconds())
+            set_refresh_cookies(response, guest_response.json['refresh_token'], max_age=current_app.config['JWT_REFRESH_TOKEN_EXPIRES'].total_seconds())
+            print("Set cookies")
+
+        return response
     
     @staticmethod
     def delete_product_from_cart(cart_product_id):

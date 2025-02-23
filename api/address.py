@@ -3,7 +3,7 @@ from marshmallow import ValidationError
 from flask_restx import Namespace, Resource, fields, marshal
 from flask_jwt_extended import jwt_required
 from services.address_service import AddressService
-from decorators import handle_exceptions
+from decorators import handle_exceptions, customer_required
 
 # Create a namespace
 address_ns = Namespace('address', description='Address related operations')
@@ -58,6 +58,7 @@ class AddressDetailResource(Resource):
         return marshal(address, address_model), 200
 
     @jwt_required()
+    @customer_required()
     @handle_exceptions
     def put(self, address_id): # Update a single address
         data = request.get_json()
@@ -68,6 +69,7 @@ class AddressDetailResource(Resource):
 
 
     @jwt_required() 
+    @customer_required()
     @handle_exceptions
     def delete(self, address_id): # Delete a single address        
         AddressService.delete_address(address_id)        

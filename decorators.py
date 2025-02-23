@@ -18,6 +18,18 @@ def admin_required():
         return wrapper
     return decorator
 
+def customer_required():
+    def decorator(fn):
+        @wraps(fn)        
+        def wrapper(*args, **kwargs):
+            current_user_id = get_jwt_identity()
+            user = User.query.get(current_user_id)
+            if user.role != 'customer' and user.role != 'admin':
+                return {'error': 'Unauthorized access'}, 403
+            return fn(*args, **kwargs)
+        return wrapper
+    return decorator
+
 def handle_exceptions(fn):
     @wraps(fn)
     def decorator(*args, **kwargs):

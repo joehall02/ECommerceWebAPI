@@ -117,6 +117,7 @@ class OrderService:
             address_line_2 = valid_data['address_line_2'],
             city = valid_data['city'],
             postcode = valid_data['postcode'],
+            customer_email = valid_data['customer_email'],
             user_id = user,
         )
         new_order.save()
@@ -228,7 +229,6 @@ class OrderService:
                 'order': order,
                 'order_items': order_items,
                 'customer_name': customer.full_name,
-                'customer_email': customer.email
             }
 
             # Serialize the data

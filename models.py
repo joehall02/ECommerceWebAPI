@@ -4,9 +4,10 @@ class User(db.Model):
     __tablename__ = 'User'
     id = db.Column(db.Integer, primary_key=True)
     full_name = db.Column(db.String(100), nullable=False)    
-    email = db.Column(db.String(100), nullable=False, unique=True) # unique=True ensures that no two users can have the same email
+    email = db.Column(db.String(100), nullable=True, unique=True) # unique=True ensures that no two users can have the same email, nullable=True allows for NULL values for guest users
     password = db.Column(db.String(300), nullable=False)    
     stripe_customer_id = db.Column(db.String(50), nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False)
     role = db.Column(db.String(50), nullable=False)
 
     # Relationships
@@ -206,6 +207,7 @@ class Order(db.Model):
     address_line_2 = db.Column(db.String(100), nullable=True)
     city = db.Column(db.String(100), nullable=False)
     postcode = db.Column(db.String(20), nullable=False)
+    customer_email = db.Column(db.String(100), nullable=False)
     
     # Foreign keys
     user_id = db.Column(db.Integer, db.ForeignKey('User.id'), nullable=True)  # Allow NULL

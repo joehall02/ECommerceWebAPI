@@ -4,7 +4,7 @@ from flask_restx import Namespace, Resource, fields, marshal
 from flask_jwt_extended import jwt_required
 from decorators import admin_required
 from services.order_service import OrderService
-from decorators import handle_exceptions
+from decorators import handle_exceptions, customer_required
 from models import User
 import stripe
 
@@ -22,6 +22,7 @@ order_model = order_ns.model('Order', {
     'address_line_2': fields.String(),
     'city': fields.String(required=True),
     'postcode': fields.String(required=True),
+    'customer_email': fields.String(required=True),
     'user_id': fields.Integer(required=True),    
 })
     
@@ -51,13 +52,13 @@ combined_admin_model = order_ns.model('CombinedAdmin', {
     'order': fields.Nested(order_model),
     'order_items': fields.List(fields.Nested(order_item_model)),
     'customer_name': fields.String(required=True),
-    'customer_email': fields.String(required=True),
 })
 
 # Define the routes for order operations
 @order_ns.route('/', methods=['GET'])
 class OrderResource(Resource):
     @jwt_required()
+    @customer_required()
     @handle_exceptions
     def get(self): # Get all orders        
         page = request.args.get('page', 1, type=int) # Get the page number from the query string        
@@ -144,8 +145,9 @@ class OrderResource(Resource):
         
         # Handle the event
         if event['type'] == 'checkout.session.completed':
-            session = event['data']['object'] # Contains a stripe checkout session
-            
+            session = event['data']['object'] # Contains a stripe checkout session            
+            customer_email = session['customer_details']['email']
+
             # Extract the metadata, which contains the user id and address details
             metadata = session['metadata']
             user_id = metadata['user_id']
@@ -163,7 +165,8 @@ class OrderResource(Resource):
                 'address_line_1': address_line_1,
                 'address_line_2': address_line_2,
                 'city': city,
-                'postcode': postcode
+                'postcode': postcode,
+                'customer_email': customer_email
             }
 
             # Extract the stripe customer id
