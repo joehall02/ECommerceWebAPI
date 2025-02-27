@@ -307,5 +307,52 @@ class OrderService:
         order.status = order_status
         order.save()
 
+    @staticmethod
+    def get_all_of_a_users_orders(page=1, per_page=6, user_id=None):
+        # Check if the user id is provided
+        if not user_id:
+            raise ValidationError('No user id provided')
+
+        # Check if the user exists
+        if not User.query.get(user_id):
+            raise ValidationError('User not found')
+
+        # Get the orders for the user, order by order date in descending order, i.e. latest order first
+        query = Order.query.filter_by(user_id=user_id).order_by(Order.order_date.desc()) 
+        orders_query = query.paginate(page=page, per_page=per_page, error_out=False)
+        orders = orders_query.items        
+        
+        entire_order = []
+
+        # Get the order items for each order
+        for order in orders:
+            order_items = []
+
+            for order_item in order.order_items:
+
+                # Get the product image
+                product_image = ProductImage.query.filter_by(product_id=order_item.product_id).first()
+
+                if product_image:
+                    order_item.product_image = product_image.image_path                
+
+                order_items.append(order_item)
+
+            entire_order.append({
+                'order': order,
+                'order_items': order_items
+            })
+        
+        # Serialize the data
+        orders = order_item_combined_schema.dump(entire_order, many=True)
+    
+        return {
+            'orders': orders,
+            'total_pages': orders_query.pages,
+            'current_page': orders_query.page,
+            'total_orders': orders_query.total
+        }
+
+         
 
         

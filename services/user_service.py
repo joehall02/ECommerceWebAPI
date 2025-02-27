@@ -1,16 +1,19 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity, set_access_cookies, set_refresh_cookies, get_csrf_token
 from sqlalchemy import extract
-from models import User, Cart, Order
+from models import User, Cart, Order, ProductImage
 from flask import current_app, make_response, jsonify
 from marshmallow import ValidationError
-from schemas import SignupSchema, LoginSchema
+from schemas import SignupSchema, LoginSchema, UserSchema, UserAdminSchema, UserOrderCombinedSchema
 from werkzeug.security import generate_password_hash, check_password_hash
 from exts import db
 
 # Define the schema instances
 signup_schema = SignupSchema()
 login_schema = LoginSchema()    
+user_admin_schema = UserAdminSchema()
+user_schema = UserSchema()
+# user_order_combined_schema = UserOrderCombinedSchema()
 
 # Services
 class UserService:
@@ -23,11 +26,16 @@ class UserService:
         # Validate the request data against the signup schema
         valid_data = signup_schema.load(data)
 
+        # Check the length of the password
+        if (len(valid_data['password']) < 8):
+            raise ValidationError('Password must be at least 8 characters long')
+
         email_exists = User.query.filter_by(email=valid_data['email']).first()        
         
         # Check if a user with the provided email or phone number already exists
         if email_exists:
             raise ValidationError('User with the provided email already exists')
+
 
         # Check if there are any users in the database
         user_count = User.query.count()
@@ -191,6 +199,10 @@ class UserService:
         # Validate the request data against the login schema
         valid_data = login_schema.load(data)
 
+        # Check the length of the password
+        if (len(valid_data['password']) < 8):
+            raise ValidationError('Password must be at least 8 characters long')
+
         user = User.query.filter_by(email=valid_data['email']).first() # Get the user with the provided email
 
         if not user:
@@ -265,6 +277,10 @@ class UserService:
         if not data:
             raise ValidationError('No data provided')
         
+        # Check the length of the new password
+        if (len(data['new_password']) < 8):
+            raise ValidationError('Password must be at least 8 characters long')
+
         # Get current user
         current_user_id = get_jwt_identity()
 
@@ -332,3 +348,87 @@ class UserService:
             'total_revenue': total_revenue,
             'graph_data': orders_per_month_data
         }
+    
+    @staticmethod
+    def delete_old_guest_users(app):
+        with app.app_context(): # Ensure that the app context is available since this is not ran in a request context
+            expiration_date = datetime.now() - timedelta(hours=12)
+            
+            print("Deleting guest users")
+
+            # Get all guest users that are older than expiration date
+            guest_users = User.query.filter(User.role == 'guest', User.created_at < expiration_date).all()
+
+            for guest_user in guest_users:
+                guest_user.delete()
+
+            return {'message': 'Old guest users deleted'}
+        
+    @staticmethod
+    def get_all_admin_users(page):
+        query = User.query.order_by(User.created_at.desc()) # Get all users ordered by the date they were created
+
+        # Paginate the results
+        users_query = query.paginate(page=page, per_page=10)
+        users = users_query.items
+
+        if not users:
+            raise ValidationError('No users found')
+        
+        # Serialise the users
+        users = user_admin_schema.dump(users, many=True)
+
+        return {
+            'users': users,
+            'total_pages': users_query.pages,
+            'current_page': users_query.page,
+            'total_users': users_query.total
+        }
+
+    @staticmethod
+    def get_user(user_id):
+        # Check if the user id is provided
+        if not user_id:
+            raise ValidationError('No user id provided')
+        
+        user = User.query.get(user_id)
+
+        # Check if the user exists
+        if not user:
+            raise ValidationError('User not found')
+        
+        # Serialise the user
+        user = user_schema.dump(user)
+
+        return user
+
+        # # Get the orders for the user
+        # orders = Order.query.filter_by(user_id=user_id).all()
+
+        # all_data = {
+        #     'user': user,
+        #     'orders': []
+        # }        
+
+        # for order in orders:
+        #     order_items = []
+
+        #     for order_item in order.order_items:
+
+        #         # Get the product image
+        #         product_image = ProductImage.query.filter_by(product_id=order_item.product_id).first()
+
+        #         if product_image:
+        #             order_item.product_image = product_image.image_path
+
+        #         order_items.append(order_item)
+            
+        #     all_data['orders'].append({
+        #         'order': order,
+        #         'order_items': order_items
+        #     })
+
+        # # Serialise the data
+        # user_and_orders = user_order_combined_schema.dump(all_data)
+
+        # return user_and_orders

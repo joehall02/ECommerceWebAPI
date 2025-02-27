@@ -17,6 +17,8 @@ from api.order import order_ns
 from api.address import address_ns
 from api.cart import cart_ns
 import stripe
+from apscheduler.schedulers.background import BackgroundScheduler
+from services.user_service import UserService
 
 def create_app(config=Development):
     # Create an instance of the Flask app
@@ -60,5 +62,15 @@ def create_app(config=Development):
     # api.add_namespace(payment_ns)
     api.add_namespace(address_ns)
     api.add_namespace(cart_ns)
+
+    # Start backgrounud jobs
+    def start_scheduler(app=app):
+        print('Starting scheduler')
+        scheduler = BackgroundScheduler()
+        scheduler.add_job(lambda: UserService.delete_old_guest_users(app), 'interval', hours=1) # Delete guest users
+        scheduler.start()
+
+    # Start the scheduler
+    start_scheduler()
 
     return app

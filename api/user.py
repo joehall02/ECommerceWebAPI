@@ -1,7 +1,7 @@
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required, unset_jwt_cookies
 from models import User
 from flask import current_app, request, jsonify
-from flask_restx import Namespace, Resource, fields
+from flask_restx import Namespace, Resource, fields, marshal
 from marshmallow import ValidationError
 from services.user_service import UserService   
 from decorators import handle_exceptions, admin_required, customer_required
@@ -20,6 +20,56 @@ signup_model = user_ns.model('Signup', {
 login_model = user_ns.model('Login', {
     'email': fields.String(required=True),
     'password': fields.String(required=True)
+})
+
+user_model = user_ns.model('User', {
+    'id': fields.Integer(required=True),
+    'full_name': fields.String(required=True),
+    'email': fields.String(required=True),
+    'stripe_customer_id': fields.String(required=False),
+    'created_at': fields.DateTime(required=True),
+    'role': fields.String(required=True),
+
+})
+
+user_admin_model = user_ns.model('UserAdmin', {
+    'id': fields.Integer(required=True),
+    'full_name': fields.String(required=True),
+    'email': fields.String(required=True),
+    'role': fields.String(required=True),
+})
+
+order_model = user_ns.model('Order', {
+    'id': fields.Integer(required=True),
+    'order_date': fields.Date(required=True),
+    'total_price': fields.Float(required=True),
+    'status': fields.String(required=True),
+    'full_name': fields.String(required=True),
+    'address_line_1': fields.String(required=True),
+    'address_line_2': fields.String(),
+    'city': fields.String(required=True),
+    'postcode': fields.String(required=True),
+    'customer_email': fields.String(required=True),
+    'user_id': fields.Integer(required=True),    
+})
+    
+order_item_model = user_ns.model('OrderItem', {
+    'quantity': fields.Integer(required=True),
+    'name': fields.String(required=True),
+    'price': fields.Float(required=True),
+    'product_image': fields.String(), # This field is not required
+    'product_id': fields.Integer(), # This field is not required, if product is deleted product_id is set to null
+    'order_id': fields.Integer(required=True),
+})
+
+order_item_combined_model = user_ns.model('OrderItemCombined', {
+    'order': fields.Nested(order_model),
+    'order_items': fields.List(fields.Nested(order_item_model)),
+})
+
+user_order_combined_model = user_ns.model('UserOrderCombined', {
+    'user': fields.Nested(user_model),
+    'orders':  fields.List(fields.Nested(order_item_combined_model)),
 })
 
 @user_ns.route('/signup', methods=['POST'])
@@ -123,13 +173,46 @@ class UserResource(Resource):
         response = UserService.get_full_name()
 
         return response
-    
+
 @user_ns.route('/admin', methods=['GET'])
 class AdminResource(Resource):
     @jwt_required()
     @admin_required()
     @handle_exceptions
-    def get(self):
+    def get(self): # Get all users
+        page = request.args.get('page', 1, type=int)
+
+        results = UserService.get_all_admin_users(page)
+
+        response = {
+            'users': marshal(results['users'], user_admin_model),
+            'total_pages': results['total_pages'],
+            'current_page': results['current_page'],
+            'total_users': results['total_users']
+        }
+
+        return response, 200
+        
+@user_ns.route('/admin/<int:user_id>', methods=['GET'])
+class AdminResouce(Resource):
+    @jwt_required()
+    @admin_required()
+    @handle_exceptions
+    def get(self, user_id): # Get a user
+        user = UserService.get_user(user_id)
+
+        return marshal(user, user_model), 200
+        
+        # user_and_orders = UserService.get_user_and_orders(user_id)
+
+        # return marshal(user_and_orders, user_order_combined_model), 200
+
+@user_ns.route('/admin/dashboard', methods=['GET'])
+class AdminResource(Resource):
+    @jwt_required()
+    @admin_required()
+    @handle_exceptions
+    def get(self): # Get the dashboard data
         results = UserService.get_dashboard_data()
 
         response = {

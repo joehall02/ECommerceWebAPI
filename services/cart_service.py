@@ -94,9 +94,9 @@ class CartService:
         # Get the user if JWT is provided, else create a guest user        
         user = get_jwt_identity()
         
+        # Create guest user if user is not found
         if not user:
             user, guest_response = UserService.create_guest_user()
-            print("created guest user")
 
         # Check if the user exists
         if not user:
@@ -146,7 +146,6 @@ class CartService:
             response.headers['x-refresh-csrf-token'] = guest_response.headers['x-refresh-csrf-token']
             set_access_cookies(response, guest_response.json['access_token'], max_age=current_app.config['JWT_ACCESS_TOKEN_EXPIRES'].total_seconds())
             set_refresh_cookies(response, guest_response.json['refresh_token'], max_age=current_app.config['JWT_REFRESH_TOKEN_EXPIRES'].total_seconds())
-            print("Set cookies")
 
         return response
     

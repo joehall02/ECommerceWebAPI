@@ -126,6 +126,25 @@ class AdminOrderResource(Resource):
         
         return {'message': 'Order status updated successfully'}, 200
     
+@order_ns.route('/admin/user/<int:user_id>', methods=['GET'])
+class AdminOrderResource(Resource):
+    @jwt_required()
+    @admin_required()
+    @handle_exceptions
+    def get(self, user_id): # Get all orders for a user
+        page = request.args.get('page', 1, type=int) # Get the page number from the query string
+
+        results = OrderService.get_all_of_a_users_orders(page, per_page=6, user_id=user_id)
+
+        response = {
+            'orders': marshal(results['orders'], combined_model),
+            'total_pages': results['total_pages'],
+            'current_page': results['current_page'],
+            'total_orders': results['total_orders']
+        }
+
+        return response, 200
+    
 @order_ns.route('/webhook', methods=['POST'])
 class OrderResource(Resource):
     def post(self): # Handle stripe webhook

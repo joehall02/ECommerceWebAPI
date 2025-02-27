@@ -11,6 +11,7 @@ class LoginSchema(Schema):
     email = ma_fields.Email(required=True, error_messages={'required': 'Email is required', 'null': 'Email cannot be empty'})
     password = ma_fields.String(required=True, error_messages={'required': 'Password is required', 'null': 'Password cannot be empty'})
 
+
 # Product schemas
 class ProductSchema(Schema):
     id = ma_fields.Integer(required=False, error_messages={'required': 'Product ID is required', 'null': 'Product ID cannot be empty'})
@@ -121,4 +122,23 @@ class AddressSchema(Schema):
     city = ma_fields.String(required=True, error_messages={'required': 'City is required', 'null': 'City cannot be empty'})
     postcode = ma_fields.String(required=True, error_messages={'required': 'Postcode is required', 'null': 'City cannot be empty'})
     is_default = ma_fields.Boolean(required=True, error_messages={'required': 'Default status is required', 'null': 'Default status cannot be empty'})
+
+# User schemas
+class UserSchema(Schema):
+    id = ma_fields.Integer(required=False, error_messages={'required': 'User ID is required', 'null': 'User ID cannot be empty'})
+    full_name = ma_fields.String(required=True, error_messages={'required': 'Full name is required', 'null': 'Full name cannot be empty'})
+    email = ma_fields.Email(required=True, error_messages={'required': 'Email is required', 'null': 'Email cannot be empty'})
+    stripe_customer_id = ma_fields.String(required=False, error_messages={'null': 'Stripe customer ID cannot be empty'})
+    created_at = ma_fields.DateTime(required=True, error_messages={'required': 'Created at is required', 'null': 'Created at cannot be empty'})
+    role = ma_fields.String(required=True, error_messages={'required': 'Role is required', 'null': 'Role cannot be empty'})
+
+class UserOrderCombinedSchema(Schema):
+    user = ma_fields.Nested(UserSchema)
+    orders = ma_fields.List(ma_fields.Nested(OrderItemCombinedSchema))
+
+class UserAdminSchema(Schema):
+    id = ma_fields.Integer(required=False, error_messages={'required': 'User ID is required', 'null': 'User ID cannot be empty'})
+    full_name = ma_fields.String(required=True, error_messages={'required': 'Full name is required', 'null': 'Full name cannot be empty'})
+    email = ma_fields.Email(required=True, error_messages={'required': 'Email is required', 'null': 'Email cannot be empty'})
+    role = ma_fields.String(required=True, error_messages={'required': 'Role is required', 'null': 'Role cannot be empty'})
     

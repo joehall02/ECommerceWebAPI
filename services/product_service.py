@@ -224,7 +224,7 @@ class ProductService:
         if not product:
             raise ValidationError('Product not found')
 
-        # Serialize the data
+        # Serialise the data
         product = product_schema.dump(product)
 
         return product
