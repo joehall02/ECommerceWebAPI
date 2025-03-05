@@ -1,4 +1,4 @@
-from models import Address
+from models import Address, User
 from marshmallow import ValidationError
 from flask_jwt_extended import get_jwt_identity
 from schemas import AddressSchema
@@ -82,6 +82,15 @@ class AddressService:
         if not address:
             raise ValidationError('Address not found')
         
+        # Get the user
+        user = get_jwt_identity()
+
+        user = User.query.get(user)
+
+        # Check if the address belongs to the user
+        if address.user_id != user.id:
+            raise ValidationError('Address does not belong to the user')
+        
         # Serialize the address object to a json object
         address = address_schema.dump(address)
         
@@ -129,9 +138,16 @@ class AddressService:
         if not user:
             raise ValidationError('User not found')
         
+        # Get the user 
+        user = User.query.get(user)
+
+        # Check if the address belongs to the user
+        if address.user_id != user.id:
+            raise ValidationError('Address does not belong to the user')
+        
         # if is_default is True, set all addresses except the current one to False
         if valid_data['is_default'] == True:
-            addresses = Address.query.filter_by(user_id=user).all()
+            addresses = Address.query.filter_by(user_id=user.id).all()
             for addr in addresses:
                 if addr.id != address_id:    
                     addr.is_default = False
@@ -165,10 +181,23 @@ class AddressService:
         if not user:
             raise ValidationError('User not found')
         
-        addresses = Address.query.filter_by(user_id=user).all()
+        # Get the user
+        user = User.query.get(user)
 
-        if addresses:
-            addresses[0].is_default = True
-            addresses[0].save()
+        # Check if the address belongs to the user
+        if address.user_id != user.id:
+            raise ValidationError('Address does not belong to the user')
+        
+        addresses = Address.query.filter_by(user_id=user.id).all()
+
+        # Check if there is already a default address
+        for addr in addresses:
+            if addr.is_default == True:
+                break
+        else:
+            # Set the first address as default
+            if addresses:
+                addresses[0].is_default = True
+                addresses[0].save()        
 
         return address

@@ -101,6 +101,24 @@ class AuthenticatedResource(Resource):
 
         return response
     
+@user_ns.route('/verify-email/<string:token>', methods=['POST'])
+class VerifyEmailResource(Resource):
+    @handle_exceptions
+    def post(self, token):
+        UserService.verify_email(token)
+
+        return {'message': 'Email verified successfully'}, 200
+    
+@user_ns.route('/resend-verification', methods=['POST'])
+class ResendVerificationResource(Resource):
+    @handle_exceptions
+    def post(self):
+        data = request.get_json()
+
+        UserService.resend_verification_email(data)
+
+        return {'message': 'Verification email sent successfully'}, 200
+
 @user_ns.route('/logout', methods=['POST'])
 class LogoutResource(Resource):
     @handle_exceptions
@@ -109,14 +127,23 @@ class LogoutResource(Resource):
         unset_jwt_cookies(response) # Unset the jwt cookies, effectively logging the user out
         return response
     
-@user_ns.route('/reset-password', methods=['PUT'])
+@user_ns.route('/reset-password', methods=['POST'])
 class ResetPasswordResource(Resource):
-    @jwt_required()
     @handle_exceptions
-    def put(self): # Reset the user password
+    def post(self): # Send a password reset email
+        data = request.get_json()
+
+        UserService.send_password_reset_email(data)
+
+        return {'message': 'Password reset email sent successfully'}, 200
+    
+@user_ns.route('/reset-password/<string:token>', methods=['PUT'])
+class ResetPasswordResource(Resource):
+    @handle_exceptions
+    def put(self, token): # Reset the user password
         data = request.get_json()
         
-        UserService.reset_password(data)    
+        UserService.reset_password(token, data)    
         
         return {'message': 'Password reset successfully'}, 200
     
@@ -224,3 +251,13 @@ class AdminResource(Resource):
         }
 
         return response, 200
+
+# @user_ns.route('/email', methods=['POST'])
+# class EmailResource(Resource):
+#     @handle_exceptions
+#     def post(self): # Send an email
+#         data = request.get_json()
+
+#         UserService.send_email(data)
+
+#         return {'message': 'Email sent successfully'}, 200

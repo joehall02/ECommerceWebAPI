@@ -1,22 +1,33 @@
 from datetime import datetime, timedelta
 from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity, set_access_cookies, set_refresh_cookies, get_csrf_token
 from sqlalchemy import extract
-from models import User, Cart, Order, ProductImage
+from models import User, Cart, Order
 from flask import current_app, make_response, jsonify
 from marshmallow import ValidationError
-from schemas import SignupSchema, LoginSchema, UserSchema, UserAdminSchema, UserOrderCombinedSchema
+from schemas import SignupSchema, LoginSchema, UserSchema, UserAdminSchema
 from werkzeug.security import generate_password_hash, check_password_hash
 from exts import db
+import requests
+from services.utils import send_email, generate_verification_token, verify_token
 
 # Define the schema instances
 signup_schema = SignupSchema()
 login_schema = LoginSchema()    
 user_admin_schema = UserAdminSchema()
 user_schema = UserSchema()
-# user_order_combined_schema = UserOrderCombinedSchema()
 
 # Services
 class UserService:
+    # @staticmethod
+    # def send_email(data):
+    #     if not data:
+    #         raise ValidationError('No data provided')
+        
+    #     # Validate the request data against the email schema
+    #     valid_data = email_schema.load(data)
+
+    #     send_email(data=valid_data)
+
     @staticmethod
     def create_user(data):
         # Check if data is provided
@@ -35,7 +46,6 @@ class UserService:
         # Check if a user with the provided email or phone number already exists
         if email_exists:
             raise ValidationError('User with the provided email already exists')
-
 
         # Check if there are any users in the database
         user_count = User.query.count()
@@ -59,7 +69,9 @@ class UserService:
             password=generate_password_hash(valid_data['password']), # Generate a password hash before storing it
             email=valid_data['email'],
             role=role,
-            created_at=datetime.now()
+            created_at=datetime.now(),
+            is_verified=False,
+            verification_token=generate_verification_token(valid_data['email'])
         )
         new_user.save()
 
@@ -69,8 +81,101 @@ class UserService:
         )
         new_cart.save()
 
+        # Send verification email
+        verification_link = f"{current_app.config['FRONTEND_URL']}/login/{new_user.verification_token}"
+        email_data = {
+            'to_name': new_user.full_name,
+            'to_email': new_user.email,
+            'subject': 'Verify your email address',
+            'text': f'Click the link to verify your email address: {verification_link}'
+        }
+
+        send_email(email_data)
+
+        new_user.last_verification_email_sent = datetime.now()
+        new_user.save()
+
         return new_user
     
+    @staticmethod
+    def verify_email(token):
+        # Check if the token is provided
+        if not token:
+            raise ValidationError('No token provided')
+        
+        # Verify the token
+        email = verify_token(token)
+
+        # Check if the returned value is provided
+        if not email:
+            raise ValidationError('Token invalid or expired')
+
+        # Get the user with the provided email
+        user = User.query.filter_by(email=email).first()
+
+        # Check if the user exists
+        if not user:
+            raise ValidationError('User not found')
+        
+        # Check if the token matches the user's verification token
+        if user.verification_token != token:
+            raise ValidationError('Invalid token or expired')
+
+        # Check if the user is already verified
+        if user.is_verified:
+            raise ValidationError('Account already verified')
+
+        # Verify the user
+        user.is_verified = True
+        user.verification_token = None # Remove the verification token after the user is verified
+        user.save()
+
+        return user
+    
+    @staticmethod
+    def resend_verification_email(data):
+        # Check if the data is provided
+        if not data:
+            raise ValidationError('No data provided')
+
+        # Validate the request data against the login schema
+        valid_data = login_schema.load(data, partial=True)
+
+        # Get the user with the provided email
+        user = User.query.filter_by(email=valid_data['email']).first()
+
+        # Check if the user exists
+        if not user:
+            raise ValidationError('User not found')
+        
+        # Check if the user is already verified
+        if user.is_verified:
+            raise ValidationError('Email already verified')
+        
+        # Check if the user has requested a resend recently (less than 60 seconds)
+        if user.last_verification_email_sent and (datetime.now() - user.last_verification_email_sent).seconds < 60:
+            raise ValidationError('Please wait before requesting another verification email')
+
+        # Generate a new verification token
+        user.verification_token = generate_verification_token(user.email)
+        user.save()
+
+        # Send verification email
+        verification_link = f"{current_app.config['FRONTEND_URL']}/login/{user.verification_token}"
+        email_data = {
+            'to_name': user.full_name,
+            'to_email': user.email,
+            'subject': 'Verify your email address',
+            'text': f'Click the link to verify your email address: {verification_link}'
+        }
+
+        send_email(email_data)
+
+        user.last_verification_email_sent = datetime.now()
+        user.save()
+
+        return user
+
     @staticmethod
     def create_guest_user():
         # Create a new guest user account
@@ -119,6 +224,9 @@ class UserService:
         
         if not user or not check_password_hash(user.password, valid_data['password']): # Check if the user exists and the password is correct
             raise ValidationError('Invalid email or password')
+        
+        if not user.is_verified:
+            raise ValidationError('Email not verified')
 
         access_token = create_access_token(identity=str(user.id), expires_delta=current_app.config['JWT_ACCESS_TOKEN_EXPIRES']) # Create an access token for the user with a 1 hour expiry
         refresh_token = create_refresh_token(identity=str(user.id), expires_delta=current_app.config['JWT_REFRESH_TOKEN_EXPIRES']) # Create a refresh token for the user
@@ -191,29 +299,107 @@ class UserService:
         return response
     
     @staticmethod
-    def reset_password(data):
+    def send_password_reset_email(data):
         # Check if the data is provided
         if not data:
             raise ValidationError('No data provided')
-        
+
         # Validate the request data against the login schema
-        valid_data = login_schema.load(data)
+        valid_data = login_schema.load(data, partial=True)
 
-        # Check the length of the password
-        if (len(valid_data['password']) < 8):
-            raise ValidationError('Password must be at least 8 characters long')
+        # Get the user with the provided email
+        user = User.query.filter_by(email=valid_data['email']).first()
 
-        user = User.query.filter_by(email=valid_data['email']).first() # Get the user with the provided email
-
+        # Check if the user exists
         if not user:
             raise ValidationError('User not found')
-        
-        # Update the user's password
-        user.password = generate_password_hash(valid_data['password'])
 
+        # Check if the user has requested a reset password email recently (less than 60 seconds)
+        if user.last_verification_email_sent and (datetime.now() - user.last_verification_email_sent).seconds < 60:
+            raise ValidationError('Please wait before requesting another reset password email')
+        
+        # Generate a new verification token 
+        user.verification_token = generate_verification_token(user.email)
+        user.save()
+
+        # Send verification email
+        reset_password_link = f"{current_app.config['FRONTEND_URL']}/reset-password/{user.verification_token}"
+        email_data = {
+            'to_name': user.full_name,
+            'to_email': user.email,
+            'subject': 'Reset your password',
+            'text': f'Click the link to reset your password: {reset_password_link}'
+        }
+
+        send_email(email_data)
+
+        user.last_verification_email_sent = datetime.now()
         user.save()
 
         return user
+
+    @staticmethod
+    def reset_password(token, data):
+        # Check if the token is provided
+        if not token:
+            raise ValidationError('No token provided')
+
+        # Check if the data is provided
+        if not data:
+            raise ValidationError('No data provided')
+
+        # Verify the token
+        email = verify_token(token)
+
+        # Check if the returned value is provided
+        if not email:
+            raise ValidationError('Token invalid or expired')
+
+        # Check the length of the new password
+        if (len(data['new_password']) < 8):
+            raise ValidationError('Password must be at least 8 characters long')
+
+        # Get the user with the provided email
+        user = User.query.filter_by(email=email).first()
+
+        # Check if the user exists
+        if not user:
+            raise ValidationError('User not found')
+
+        # Check if the token matches the user's verification token
+        if user.verification_token != token:
+            raise ValidationError('Invalid token or expired')
+
+        # Update the user's password
+        user.password = generate_password_hash(data['new_password'])
+
+        user.verification_token = None # Remove the verification token after the user resets their password
+        user.save()
+
+        return user
+
+        # # Check if the data is provided
+        # if not data:
+        #     raise ValidationError('No data provided')
+        
+        # # Validate the request data against the login schema
+        # valid_data = login_schema.load(data)
+
+        # # Check the length of the password
+        # if (len(valid_data['password']) < 8):
+        #     raise ValidationError('Password must be at least 8 characters long')
+
+        # user = User.query.filter_by(email=valid_data['email']).first() # Get the user with the provided email
+
+        # if not user:
+        #     raise ValidationError('User not found')
+        
+        # # Update the user's password
+        # user.password = generate_password_hash(valid_data['password'])
+
+        # user.save()
+
+        # return user
     
     @staticmethod
     def edit_name(data):
@@ -351,18 +537,21 @@ class UserService:
     
     @staticmethod
     def delete_old_guest_users(app):
-        with app.app_context(): # Ensure that the app context is available since this is not ran in a request context
-            expiration_date = datetime.now() - timedelta(hours=12)
-            
-            print("Deleting guest users")
+        try:
+            with app.app_context(): # Ensure that the app context is available since this is not ran in a request context
+                expiration_date = datetime.now() - timedelta(hours=12)
+                
+                print("Deleting guest users")
 
-            # Get all guest users that are older than expiration date
-            guest_users = User.query.filter(User.role == 'guest', User.created_at < expiration_date).all()
+                # Get all guest users that are older than expiration date
+                guest_users = User.query.filter(User.role == 'guest', User.created_at < expiration_date).all()
 
-            for guest_user in guest_users:
-                guest_user.delete()
+                for guest_user in guest_users:
+                    guest_user.delete()
 
-            return {'message': 'Old guest users deleted'}
+                return {'message': 'Old guest users deleted'}
+        except Exception as e:
+            return {'message': str(e)}
         
     @staticmethod
     def get_all_admin_users(page):

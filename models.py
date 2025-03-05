@@ -9,6 +9,9 @@ class User(db.Model):
     stripe_customer_id = db.Column(db.String(50), nullable=True)
     created_at = db.Column(db.DateTime, nullable=False)
     role = db.Column(db.String(50), nullable=False)
+    is_verified = db.Column(db.Boolean, nullable=False, default=False)
+    verification_token = db.Column(db.String(100), nullable=True)
+    last_verification_email_sent = db.Column(db.DateTime, nullable=True)
 
     # Relationships
     addresses = db.relationship('Address', backref='user', lazy=True, cascade="all, delete", passive_deletes=True) # cascade="all, delete" ensures that when a user is deleted, all addresses are also deleted and passive_deletes=True ensures that the database handles the deletion of the addresses
@@ -208,6 +211,7 @@ class Order(db.Model):
     city = db.Column(db.String(100), nullable=False)
     postcode = db.Column(db.String(20), nullable=False)
     customer_email = db.Column(db.String(100), nullable=False)
+    tracking_number = db.Column(db.String(100), nullable=True)
     
     # Foreign keys
     user_id = db.Column(db.Integer, db.ForeignKey('User.id'), nullable=True)  # Allow NULL

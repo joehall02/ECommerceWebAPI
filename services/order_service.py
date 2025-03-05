@@ -5,6 +5,8 @@ from models import Order, OrderItem, Cart, ProductImage, Product, User
 from flask_jwt_extended import get_jwt_identity
 from schemas import OrderSchema, OrderItemSchema, OrderItemCombinedSchema, OrderAdminSchema, OrderItemCombinedAdminSchema
 import stripe
+from flask import current_app
+from services.utils import send_email
 
 # Define the schema instances
 order_schema = OrderSchema()
@@ -64,8 +66,8 @@ class OrderService:
             payment_method_types=['card'],
             line_items=line_items,
             mode='payment',
-            success_url='http://localhost:3000/checkout/success',
-            cancel_url='http://localhost:3000/checkout/cancel',
+            success_url=f'{current_app.config['FRONTEND_URL']}/checkout/success',
+            cancel_url=f'{current_app.config['FRONTEND_URL']}/checkout/cancel',
             customer_email=user.email if not user.stripe_customer_id else None, # Attach the email to the session if the user doesn't have a stripe customer id
             customer=user.stripe_customer_id if user.stripe_customer_id else None, # Attach the customer to the session if one exists
             customer_creation='always' if not user.stripe_customer_id else None, # Create a new customer if one doesn't exist
@@ -297,11 +299,21 @@ class OrderService:
         if not order:
             raise ValidationError('Order not found')
 
-        # Validate the data
+        # Get the order status
         order_status = valid_data['status']
 
         if order_status not in ['Processing', 'Shipped', 'Delivered']:
             raise ValidationError('Invalid order status')
+
+        if order_status == 'Shipped':
+            # Send an email to the customer
+            email_data = {
+                'to_name': order.full_name,
+                'to_email': order.customer_email,
+                'subject': 'Order Shipped',
+                'text': 'Your order has been shipped! You will receive another email with the tracking number soon.'
+            }
+            send_email(email_data)
 
         # Update the order status
         order.status = order_status

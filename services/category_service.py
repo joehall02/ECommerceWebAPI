@@ -1,7 +1,7 @@
 from marshmallow import ValidationError
 from models import Category
 from schemas import CategorySchema, ProductSchema
-from services.product_service import remove_image_from_google_cloud_storage # Used to delete product images from cloud bucket if admin deletes a category
+from services.utils import remove_image_from_google_cloud_storage # Used to delete product images from cloud bucket if admin deletes a category
 
 # Define the schema instances
 category_schema = CategorySchema()

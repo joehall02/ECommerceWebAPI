@@ -1,12 +1,10 @@
-import uuid
 from marshmallow import ValidationError
 from models import Product, Category, FeaturedProduct, ProductImage
 from werkzeug.utils import secure_filename
-from google.cloud import storage
 from dotenv import load_dotenv
 from schemas import ProductSchema, ProductImageSchema, FeaturedProductSchema, ProductShopSchema, ProductAdminSchema
-import os
 import stripe
+from services.utils import allowed_file, upload_image_to_google_cloud_storage, remove_image_from_google_cloud_storage
 
 # Load environment variables
 load_dotenv()
@@ -17,62 +15,6 @@ featured_product_schema = FeaturedProductSchema()
 product_image_schema = ProductImageSchema()
 product_shop_schema = ProductShopSchema()
 product_admin_schema = ProductAdminSchema()
-
-# Check if the file is an image
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'png', 'jpg', 'jpeg'}
-
-# Upload an image file to Google Cloud Storage
-def upload_image_to_google_cloud_storage(image_file):
-    # Set the Google Cloud Storage bucket name
-    bucket_name = os.getenv('GOOGLE_CLOUD_STORAGE_BUCKET_NAME')
-
-    if not bucket_name:
-        raise ValidationError('Google Cloud Storage bucket name not found')
-
-    # Intialise a Google Cloud Storage client
-    client = storage.Client()
-
-    # Get the bucket
-    bucket = client.bucket(bucket_name)
-
-    # Create a unique filename for the image file
-    image_file.filename = f"{uuid.uuid4().hex}-{image_file.filename}"
-
-    # Create a blob object
-    blob = bucket.blob(image_file.filename)
-
-    # Upload the image file to Google Cloud Storage
-    blob.upload_from_string(image_file.read(), content_type=image_file.content_type)
-
-    # Get the image path
-    image_path = f'{bucket_name}/{blob.name}'
-
-    return image_path
-
-# Remove an image file from Google Cloud Storage
-def remove_image_from_google_cloud_storage(image_path):
-    # Set the Google Cloud Storage bucket name
-    bucket_name = os.getenv('GOOGLE_CLOUD_STORAGE_BUCKET_NAME')
-
-    # Check if the bucket name exists
-    if not bucket_name:
-        raise ValidationError('Google Cloud Storage bucket name not found')
-
-    # Intialise a Google Cloud Storage client
-    client = storage.Client()
-
-    # Get the bucket
-    bucket = client.bucket(bucket_name)
-
-    # Get the image path without the bucket name
-    image_path = image_path.split(f'{bucket_name}/')[1]
-
-    # Get the blob
-    blob = bucket.blob(image_path)
-
-    # Delete the image file from Google Cloud Storage
-    blob.delete()
 
 # Services    
 class ProductService:

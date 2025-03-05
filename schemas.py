@@ -11,7 +11,6 @@ class LoginSchema(Schema):
     email = ma_fields.Email(required=True, error_messages={'required': 'Email is required', 'null': 'Email cannot be empty'})
     password = ma_fields.String(required=True, error_messages={'required': 'Password is required', 'null': 'Password cannot be empty'})
 
-
 # Product schemas
 class ProductSchema(Schema):
     id = ma_fields.Integer(required=False, error_messages={'required': 'Product ID is required', 'null': 'Product ID cannot be empty'})
