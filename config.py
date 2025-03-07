@@ -12,11 +12,12 @@ class Config:
     FRONTEND_URL = os.getenv('FRONTEND_URL') # Get the frontend URL from the environment variables
     # JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY') # Get the JWT secret key from the environment variables
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=30) # Set the access token expiry time
-    JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=7) # Set the refresh token expiry time
+    JWT_REFRESH_TOKEN_EXPIRES = timedelta(hours=1) # Set the refresh token expiry time
+    JWT_REFRESH_TOKEN_REMEMBER_ME_EXPIRES = timedelta(days=30) # Set the remember me refresh token expiry time
     JWT_TOKEN_LOCATION = ['cookies']
     JWT_ACCESS_COOKIE_NAME = 'access_token'
     JWT_REFRESH_COOKIE_NAME = 'refresh_token'
-    JWT_COOKIE_CSRF_PROTECT = True  # Set to True to enable CSRF protection    
+    JWT_COOKIE_CSRF_PROTECT = False  # Set to True to enable CSRF protection    
     JWT_COOKIE_SECURE = True # Set to True to enable secure cookies
     JWT_COOKIE_SAMESITE = 'None' # Set the SameSite attribute for cookies    
     STRIPE_API_KEY = os.getenv('STRIPE_API_KEY') # Get the Stripe API key from the environment variables

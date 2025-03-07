@@ -229,18 +229,25 @@ class UserService:
             raise ValidationError('Email not verified')
 
         access_token = create_access_token(identity=str(user.id), expires_delta=current_app.config['JWT_ACCESS_TOKEN_EXPIRES']) # Create an access token for the user with a 1 hour expiry
-        refresh_token = create_refresh_token(identity=str(user.id), expires_delta=current_app.config['JWT_REFRESH_TOKEN_EXPIRES']) # Create a refresh token for the user
+        
+        if valid_data['remember_me'] == True:
+            refresh_token = create_refresh_token(identity=str(user.id), expires_delta=current_app.config['JWT_REFRESH_TOKEN_REMEMBER_ME_EXPIRES'])
+        else:
+            refresh_token = create_refresh_token(identity=str(user.id), expires_delta=current_app.config['JWT_REFRESH_TOKEN_EXPIRES']) 
         
         # Create a response
         response = make_response(jsonify({'message': 'Login successful'}))
 
         # Set the x-csrf-token header
-        response.headers['x-access-csrf-token'] = get_csrf_token(access_token)
-        response.headers['x-refresh-csrf-token'] = get_csrf_token(refresh_token)
+        # response.headers['x-access-csrf-token'] = get_csrf_token(access_token)
+        # response.headers['x-refresh-csrf-token'] = get_csrf_token(refresh_token)
         
         # Set HTTP-only cookies for the access and refresh tokens
-        set_access_cookies(response, access_token, max_age=current_app.config['JWT_ACCESS_TOKEN_EXPIRES'].total_seconds())
-        set_refresh_cookies(response, refresh_token, max_age=current_app.config['JWT_REFRESH_TOKEN_EXPIRES'].total_seconds())
+        set_access_cookies(response, access_token)
+        set_refresh_cookies(response, refresh_token)
+
+        # set_access_cookies(response, access_token, max_age=current_app.config['JWT_ACCESS_TOKEN_EXPIRES'].total_seconds())
+        # set_refresh_cookies(response, refresh_token, max_age=current_app.config['JWT_REFRESH_TOKEN_EXPIRES'].total_seconds())
 
         return response
 
@@ -266,7 +273,7 @@ class UserService:
                 is_admin = False
                 is_customer = False
 
-        access_token = create_access_token(identity=current_user_id, expires_delta=current_app.config['JWT_ACCESS_TOKEN_EXPIRES']) # Create a new access token
+        # access_token = create_access_token(identity=current_user_id, expires_delta=current_app.config['JWT_ACCESS_TOKEN_EXPIRES']) # Create a new access token
 
         response = make_response(jsonify(logged_in=logged_in, is_admin=is_admin, is_customer=is_customer))
 
@@ -274,11 +281,11 @@ class UserService:
         print("is admin: ", is_admin)
         print("is customer:", is_customer)
 
-        # Set the x-csrf-token header
-        response.headers['x-access-csrf-token'] = get_csrf_token(access_token)
+        # # Set the x-csrf-token header
+        # response.headers['x-access-csrf-token'] = get_csrf_token(access_token)
 
-        # Set the new access token as an HTTP-only cookie
-        set_access_cookies(response, access_token, max_age=current_app.config['JWT_ACCESS_TOKEN_EXPIRES'].total_seconds())
+        # # Set the new access token as an HTTP-only cookie
+        # set_access_cookies(response, access_token, max_age=current_app.config['JWT_ACCESS_TOKEN_EXPIRES'].total_seconds())
 
         return response
         
@@ -290,11 +297,12 @@ class UserService:
 
         response = make_response(jsonify({'message': 'Token refreshed'}))
 
-        # Set the x-csrf-token header
-        response.headers['x-access-csrf-token'] = get_csrf_token(new_access_token)        
+        # # Set the x-csrf-token header
+        # response.headers['x-access-csrf-token'] = get_csrf_token(new_access_token)        
 
         # Set the new access token as an HTTP-only cookie
-        set_access_cookies(response, new_access_token, max_age=current_app.config['JWT_ACCESS_TOKEN_EXPIRES'].total_seconds())
+        set_access_cookies(response, new_access_token)
+        # set_access_cookies(response, new_access_token, max_age=current_app.config['JWT_ACCESS_TOKEN_EXPIRES'].total_seconds())
 
         return response
     

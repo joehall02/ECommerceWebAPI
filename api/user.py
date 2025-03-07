@@ -19,7 +19,8 @@ signup_model = user_ns.model('Signup', {
 
 login_model = user_ns.model('Login', {
     'email': fields.String(required=True),
-    'password': fields.String(required=True)
+    'password': fields.String(required=True),
+    'remember_me': fields.Boolean(required=True),
 })
 
 user_model = user_ns.model('User', {

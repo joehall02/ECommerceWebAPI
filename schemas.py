@@ -10,6 +10,7 @@ class SignupSchema(Schema):
 class LoginSchema(Schema):
     email = ma_fields.Email(required=True, error_messages={'required': 'Email is required', 'null': 'Email cannot be empty'})
     password = ma_fields.String(required=True, error_messages={'required': 'Password is required', 'null': 'Password cannot be empty'})
+    remember_me = ma_fields.Boolean(required=True, error_messages={'required': 'Remember me is required', 'null': 'Remember me cannot be empty'})
 
 # Product schemas
 class ProductSchema(Schema):
