@@ -201,13 +201,13 @@ class UserService:
         # Create a response
         response = make_response(jsonify({'message': 'Guest user created', 'access_token': access_token, 'refresh_token': refresh_token}))
 
-        # Set the x-csrf-token header
-        response.headers['x-access-csrf-token'] = get_csrf_token(access_token)
-        response.headers['x-refresh-csrf-token'] = get_csrf_token(refresh_token)
+        # # Set the x-csrf-token header
+        # response.headers['x-access-csrf-token'] = get_csrf_token(access_token)
+        # response.headers['x-refresh-csrf-token'] = get_csrf_token(refresh_token)
 
         # Set HTTP-only cookies for the access and refresh tokens
-        set_access_cookies(response, access_token, max_age=current_app.config['JWT_ACCESS_TOKEN_EXPIRES'].total_seconds())
-        set_refresh_cookies(response, refresh_token, max_age=current_app.config['JWT_REFRESH_TOKEN_EXPIRES'].total_seconds())
+        # set_access_cookies(response, access_token)
+        # set_refresh_cookies(response, refresh_token)
 
         return new_user.id, response
 
@@ -598,6 +598,38 @@ class UserService:
         user = user_schema.dump(user)
 
         return user
+    
+    @staticmethod
+    def send_contact_us_email(data):
+        # Check if data is provided
+        if not data:
+            raise ValidationError('No data provided')
+        
+        print("Sending contact us email")
+
+        url = f"https://api.mailgun.net/v3/{current_app.config['MAILGUN_DOMAIN_NAME']}/messages"
+        auth = ("api", current_app.config['MAILGUN_API_KEY'])
+        data = {
+            "from": f"{data['from_name']} <{data['from_email']}>",
+            "to": f"{current_app.config['CONTACT_US_EMAIL']}",
+            "subject": f"Contact us: {data['subject']}",
+            "text": data['message']
+        }
+
+        response = requests.post(url, auth=auth, data=data)
+
+        # Print the response status code and text for debugging
+        print(f"Response Status Code: {response.status_code}")
+        print(f"Response Text: {response.text}")
+
+        if response.status_code != 200:
+            raise Exception(f"Failed to send email: {response.text}")
+        
+        return response.json()
+
+
+        # Validate the request data against the email schema
+        # valid_data = email_schema.load(data)
 
         # # Get the orders for the user
         # orders = Order.query.filter_by(user_id=user_id).all()

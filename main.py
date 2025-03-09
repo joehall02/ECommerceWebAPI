@@ -29,7 +29,7 @@ def create_app(config=Development):
 
     # Initialize the database
     db.init_app(app)
-
+    
     # Initialise the Stripe API
     stripe.api_key = app.config['STRIPE_API_KEY']
 
@@ -37,10 +37,11 @@ def create_app(config=Development):
     stripe.webhook_secret = app.config['STRIPE_WEBHOOK_SECRET']
 
     # Enable CORS
-    CORS(app, supports_credentials=True, origins=[app.config['FRONTEND_URL']]) # Export the x-csrf-token header
+    CORS(app, supports_credentials=True, origins=[app.config['FRONTEND_URL']]) 
 
     # Initialize the JWT manager
     jwt = JWTManager(app)
+    
 
     # Initialize the migration engine
     migrate = Migrate(app, db)

@@ -201,6 +201,16 @@ class UserResource(Resource):
         response = UserService.get_full_name()
 
         return response
+    
+@user_ns.route('/contact-us', methods=['POST'])
+class ContactUsResource(Resource):
+    @handle_exceptions    
+    def post(self): # Send contact us email
+        data = request.get_json()
+
+        UserService.send_contact_us_email(data)
+
+        return {'message': 'Email sent successfully, thanks for getting in touch!'}, 200
 
 @user_ns.route('/admin', methods=['GET'])
 class AdminResource(Resource):

@@ -142,10 +142,10 @@ class CartService:
 
         # If a guest user was created, set the user token to the response
         if 'guest_response' in locals():
-            response.headers['x-access-csrf-token'] = guest_response.headers['x-access-csrf-token']
-            response.headers['x-refresh-csrf-token'] = guest_response.headers['x-refresh-csrf-token']
-            set_access_cookies(response, guest_response.json['access_token'], max_age=current_app.config['JWT_ACCESS_TOKEN_EXPIRES'].total_seconds())
-            set_refresh_cookies(response, guest_response.json['refresh_token'], max_age=current_app.config['JWT_REFRESH_TOKEN_EXPIRES'].total_seconds())
+            # response.headers['x-access-csrf-token'] = guest_response.headers['x-access-csrf-token']
+            # response.headers['x-refresh-csrf-token'] = guest_response.headers['x-refresh-csrf-token']
+            set_access_cookies(response, guest_response.json['access_token'])
+            set_refresh_cookies(response, guest_response.json['refresh_token'])
 
         return response
     
