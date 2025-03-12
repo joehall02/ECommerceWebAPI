@@ -2,6 +2,7 @@ from marshmallow import ValidationError
 from models import Category
 from schemas import CategorySchema, ProductSchema
 from services.utils import remove_image_from_google_cloud_storage # Used to delete product images from cloud bucket if admin deletes a category
+from exts import cache
 
 # Define the schema instances
 category_schema = CategorySchema()
@@ -28,10 +29,17 @@ class CategoryService:
             name = valid_data['name']
         )
         new_category.save()
+
+        # Clear the cache
+        cache.delete_memoized(CategoryService.get_all_admin_categories)
+        cache.delete_memoized(CategoryService.get_all_categories)
+
         return new_category
     
     @staticmethod
-    def get_categories(page=1, per_page=10):
+    @cache.memoize(timeout=86400) # Cache for 24 hours
+    def get_all_admin_categories(page=1, per_page=10):
+        print('Fetching admin categories')
         # Paginate the categories. Order by id in descending order to get the latest categories first
         categories_query = Category.query.order_by(Category.id.desc()).paginate(page=page, per_page=per_page, error_out=False)
         categories = categories_query.items
@@ -51,7 +59,9 @@ class CategoryService:
         }
     
     @staticmethod
+    @cache.memoize(timeout=86400) # Cache for 24 hours
     def get_all_categories():
+        print('Fetching categories')
         categories = Category.query.all()
 
         # Check if there are any categories
@@ -75,29 +85,6 @@ class CategoryService:
         category = category_schema.dump(category)
 
         return category
-    
-    @staticmethod
-    def get_all_products_in_category(category_id):
-        # Check if the category id is provided
-        if not category_id:
-            raise ValidationError('No category id provided')
-        
-        category = Category.query.get(category_id)
-
-        # Check if the category exists
-        if not category:
-            raise ValidationError('Category not found')
-        
-        products = category.products
-
-        # Check if the category has any products
-        if not products:
-            raise ValidationError('No products found in the category')
-        
-        # Serialize the products
-        products = product_schema.dump(products, many=True)
-
-        return products
 
     @staticmethod
     def update_category(data, category_id):
@@ -121,6 +108,11 @@ class CategoryService:
         # Update the category name
         category.name = valid_data['name']
         category.save()
+
+        # Clear the cache
+        cache.delete_memoized(CategoryService.get_all_admin_categories)
+        cache.delete_memoized(CategoryService.get_all_categories)
+
         return category
     
     @staticmethod
@@ -147,4 +139,9 @@ class CategoryService:
                     remove_image_from_google_cloud_storage(product_image.image_path)
         
         category.delete()
+
+        # Clear the cache
+        cache.delete_memoized(CategoryService.get_all_admin_categories)
+        cache.delete_memoized(CategoryService.get_all_categories)
+
         return category

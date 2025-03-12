@@ -1,4 +1,3 @@
-from marshmallow import ValidationError
 from flask import request
 from flask_restx import Namespace, Resource, fields, marshal
 from flask_jwt_extended import jwt_required
@@ -81,14 +80,6 @@ class FeaturedProductResource(Resource):
         
         return marshal(featured_products, product_shop_model), 200 # return product_model
 
-@product_ns.route('/featured-product/<int:featured_product_id>', methods=['GET'])
-class FeaturedProductResource(Resource):
-    @handle_exceptions
-    def get(self, featured_product_id): # Get a single featured product
-        featured_product = FeaturedProductService.get_featured_product(featured_product_id)
-        
-        return marshal(featured_product, product_model), 200 # return product_model
-
 @product_ns.route('/product-image/<int:product_id>', methods=['GET'])
 class ProductImageResource(Resource):
     @handle_exceptions
@@ -151,6 +142,7 @@ class AdminProductResource(Resource):
 @product_ns.route('/admin/featured-product/<int:product_id>', methods=['GET'])
 class AdminFeaturedProduct(Resource):
     @jwt_required()
+    @admin_required()
     @handle_exceptions
     def get(self, product_id): # Check if a product is featured
         featured_product = FeaturedProductService.check_featured_product(product_id)
@@ -182,33 +174,14 @@ class AdminFeaturedProduct(Resource):
 class AdminProductImageResource(Resource):
     @jwt_required()
     @admin_required()
+    @handle_exceptions
     def post(self, product_id): # Add a product image for a product
         if 'image' not in request.files:
             return {'error': 'No image provided'}, 400
         
         image_file = request.files['image']
 
-        # Get the image and upload it to Google Cloud Storage and get the image path
-        try:
-            image_path = ProductImageService.upload_product_image(image_file, product_id)
-
-            # Create a new data object with the image path and product id
-            new_data = {
-                'image_path': image_path,
-                'product_id': product_id
-            }
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
-        
-        # Create a new product image
-        try:
-            ProductImageService.create_product_image(new_data)
-        except ValidationError as e:
-            return {'error': str(e)}, 400
-        except Exception as e:
-            return {'error': str(e)}, 500
+        ProductImageService.upload_product_image(image_file, product_id)
         
         return {'message': 'Product image created successfully'}, 201
 

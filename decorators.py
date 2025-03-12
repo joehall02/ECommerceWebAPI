@@ -2,8 +2,8 @@ from functools import wraps
 from flask import jsonify
 from flask_jwt_extended import get_jwt_identity
 from marshmallow import ValidationError
-import psycopg2
 from models import User
+from werkzeug.exceptions import TooManyRequests
 
 
 def admin_required():
@@ -37,6 +37,8 @@ def handle_exceptions(fn):
             return fn(*args, **kwargs)
         except ValidationError as e:
             return {'error': str(e)}, 400
+        except TooManyRequests as e:
+            return {'error': 'Reached limit for today. Please try again later.'}, 429
         except Exception as e:
             return {'error': str(e)}, 500
             # return {'error': 'An unexpected error occured. Please try again later.'}, 500

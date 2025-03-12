@@ -52,25 +52,6 @@ class Address(db.Model):
     def delete(self):
         db.session.delete(self)
         db.session.commit()
-
-# class Payment(db.Model):
-#     __tablename__ = 'Payment'
-#     id = db.Column(db.Integer, primary_key=True)
-#     stripe_payment_id = db.Column(db.String(50), nullable=False)
-
-#     # Foreign key
-#     user_id = db.Column(db.Integer, db.ForeignKey('User.id', ondelete='CASCADE'), nullable=False) # ondelete='CASCADE' ensures that when a user is deleted, their payment details are also deleted
-
-#     def __repr__(self):
-#         return f'<Payment {self.id} {self.name_on_card}>'
-    
-#     def save(self):
-#         db.session.add(self)
-#         db.session.commit()
-
-#     def delete(self):
-#         db.session.delete(self)
-#         db.session.commit()
     
 class Category(db.Model):
     __tablename__ = 'Category'

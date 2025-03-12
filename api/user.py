@@ -1,28 +1,14 @@
-from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required, unset_jwt_cookies
-from models import User
-from flask import current_app, request, jsonify
+from flask_jwt_extended import jwt_required, unset_jwt_cookies
+from flask import request, jsonify
 from flask_restx import Namespace, Resource, fields, marshal
-from marshmallow import ValidationError
 from services.user_service import UserService   
 from decorators import handle_exceptions, admin_required, customer_required
+from exts import limiter
 
 user_ns = Namespace('user', description='User operations')
 
 # Define the models for the signup and login used for api
 # documentation, actual validation is done using the schema
-signup_model = user_ns.model('Signup', {
-    'full_name': fields.String(required=True),
-    'email': fields.String(required=True),
-    'password': fields.String(required=True),
-    'stripe_customer_id': fields.String(required=False),
-})
-
-login_model = user_ns.model('Login', {
-    'email': fields.String(required=True),
-    'password': fields.String(required=True),
-    'remember_me': fields.Boolean(required=True),
-})
-
 user_model = user_ns.model('User', {
     'id': fields.Integer(required=True),
     'full_name': fields.String(required=True),
@@ -38,39 +24,6 @@ user_admin_model = user_ns.model('UserAdmin', {
     'full_name': fields.String(required=True),
     'email': fields.String(required=True),
     'role': fields.String(required=True),
-})
-
-order_model = user_ns.model('Order', {
-    'id': fields.Integer(required=True),
-    'order_date': fields.Date(required=True),
-    'total_price': fields.Float(required=True),
-    'status': fields.String(required=True),
-    'full_name': fields.String(required=True),
-    'address_line_1': fields.String(required=True),
-    'address_line_2': fields.String(),
-    'city': fields.String(required=True),
-    'postcode': fields.String(required=True),
-    'customer_email': fields.String(required=True),
-    'user_id': fields.Integer(required=True),    
-})
-    
-order_item_model = user_ns.model('OrderItem', {
-    'quantity': fields.Integer(required=True),
-    'name': fields.String(required=True),
-    'price': fields.Float(required=True),
-    'product_image': fields.String(), # This field is not required
-    'product_id': fields.Integer(), # This field is not required, if product is deleted product_id is set to null
-    'order_id': fields.Integer(required=True),
-})
-
-order_item_combined_model = user_ns.model('OrderItemCombined', {
-    'order': fields.Nested(order_model),
-    'order_items': fields.List(fields.Nested(order_item_model)),
-})
-
-user_order_combined_model = user_ns.model('UserOrderCombined', {
-    'user': fields.Nested(user_model),
-    'orders':  fields.List(fields.Nested(order_item_combined_model)),
 })
 
 @user_ns.route('/signup', methods=['POST'])
@@ -205,6 +158,7 @@ class UserResource(Resource):
 @user_ns.route('/contact-us', methods=['POST'])
 class ContactUsResource(Resource):
     @handle_exceptions    
+    @limiter.limit("3 per day") # Limit the number of requests to 3 per day
     def post(self): # Send contact us email
         data = request.get_json()
 
@@ -240,10 +194,6 @@ class AdminResouce(Resource):
         user = UserService.get_user(user_id)
 
         return marshal(user, user_model), 200
-        
-        # user_and_orders = UserService.get_user_and_orders(user_id)
-
-        # return marshal(user_and_orders, user_order_combined_model), 200
 
 @user_ns.route('/admin/dashboard', methods=['GET'])
 class AdminResource(Resource):
@@ -262,13 +212,3 @@ class AdminResource(Resource):
         }
 
         return response, 200
-
-# @user_ns.route('/email', methods=['POST'])
-# class EmailResource(Resource):
-#     @handle_exceptions
-#     def post(self): # Send an email
-#         data = request.get_json()
-
-#         UserService.send_email(data)
-
-#         return {'message': 'Email sent successfully'}, 200

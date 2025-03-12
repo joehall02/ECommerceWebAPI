@@ -1,12 +1,11 @@
 from flask import request
-from marshmallow import ValidationError
 from flask_restx import Namespace, Resource, fields, marshal
 from flask_jwt_extended import jwt_required
 from services.address_service import AddressService
 from decorators import handle_exceptions, customer_required
 
 # Create a namespace
-address_ns = Namespace('address', description='Address related operations')
+address_ns = Namespace('address', description='Address operations')
 
 # Define the models used for api documentation,
 # actual validation is done using the schema

@@ -1,5 +1,4 @@
 from datetime import date
-from flask import jsonify, request
 from marshmallow import ValidationError
 from models import Order, OrderItem, Cart, ProductImage, Product, User
 from flask_jwt_extended import get_jwt_identity
@@ -7,6 +6,9 @@ from schemas import OrderSchema, OrderItemSchema, OrderItemCombinedSchema, Order
 import stripe
 from flask import current_app
 from services.utils import send_email
+from services.product_service import ProductService, FeaturedProductService
+from services.user_service import UserService
+from exts import cache
 
 # Define the schema instances
 order_schema = OrderSchema()
@@ -149,10 +151,19 @@ class OrderService:
         # Save the updated order
         new_order.save()
 
+        # Clear the cache for the products
+        cache.delete_memoized(ProductService.get_all_products) 
+        cache.delete_memoized(ProductService.get_product)
+        cache.delete_memoized(ProductService.get_all_admin_products)
+        cache.delete_memoized(FeaturedProductService.get_all_featured_products)
+        cache.delete_memoized(UserService.get_dashboard_data)
+        cache.delete_memoized(OrderService.get_all_customer_orders)
+        cache.delete_memoized(OrderService.get_all_of_a_users_orders)
+
         return new_order
     
     @staticmethod
-    def get_all_orders(page=1, per_page=6):
+    def get_all_orders(page=1, per_page=6):        
         user = get_jwt_identity()
 
         # Check if the user exists
@@ -251,7 +262,9 @@ class OrderService:
             return order       
 
     @staticmethod
+    @cache.memoize(timeout=86400) # Cache for 24 hours
     def get_all_customer_orders(page=1, per_page=10, status=None):
+        print('Fetching customer orders')
         # Apply sorting
         if status == 'Processing':
             query = Order.query.filter_by(status='Processing').order_by(Order.id.desc()) 
@@ -319,8 +332,17 @@ class OrderService:
         order.status = order_status
         order.save()
 
+        # Clear the cache
+        cache.delete_memoized(UserService.get_dashboard_data)
+        cache.delete_memoized(OrderService.get_all_customer_orders)
+        cache.delete_memoized(OrderService.get_all_of_a_users_orders)
+
+        return order
+
     @staticmethod
+    @cache.memoize(timeout=86400) # Cache for 24 hours
     def get_all_of_a_users_orders(page=1, per_page=6, user_id=None):
+        print('Fetching user orders')
         # Check if the user id is provided
         if not user_id:
             raise ValidationError('No user id provided')

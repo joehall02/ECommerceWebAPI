@@ -1,5 +1,4 @@
-from marshmallow import ValidationError
-from flask import jsonify, request
+from flask import request
 from flask_restx import Namespace, Resource, fields, marshal
 from flask_jwt_extended import jwt_required
 from decorators import admin_required
@@ -8,7 +7,7 @@ from decorators import handle_exceptions, customer_required
 from models import User
 import stripe
 
-order_ns = Namespace('order', description='Administrator operations')
+order_ns = Namespace('order', description='Order operations')
 
 # Define the models used for api documentation,
 # actual validation is done using the schema
@@ -147,6 +146,7 @@ class AdminOrderResource(Resource):
     
 @order_ns.route('/webhook', methods=['POST'])
 class OrderResource(Resource):
+    @handle_exceptions
     def post(self): # Handle stripe webhook
         payload = request.get_data(as_text=True)
         sig_header = request.headers.get('Stripe-Signature')

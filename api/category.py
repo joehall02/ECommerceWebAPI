@@ -1,4 +1,3 @@
-from marshmallow import ValidationError
 from flask import request
 from flask_restx import Namespace, Resource, fields, marshal
 from flask_jwt_extended import jwt_required
@@ -16,14 +15,6 @@ category_model = category_ns.model('Category', {
     'name': fields.String(required=True),
 })
 
-product_model = category_ns.model('Product', {
-    'name': fields.String(required=True),
-    'description': fields.String(required=True),
-    'price': fields.Float(required=True),
-    'stock': fields.Integer(required=True),
-    'category_id': fields.Integer(required=True),
-})
-
 @category_ns.route('/', methods=['GET'])
 class CategoryResource(Resource):
     @handle_exceptions
@@ -39,12 +30,6 @@ class CategoryResource(Resource):
         category = CategoryService.get_category(category_id)
 
         return marshal(category, category_model), 200
-    
-    
-    # def get(self, category_id): # Get all products in a category        
-    #     products = CategoryService.get_all_products_in_category(category_id)                        
-                         
-    #     return marshal(products, product_model), 200
 
 @category_ns.route('/admin', methods=['POST', 'GET'])
 class AdminCategoryResource(Resource):
@@ -64,7 +49,7 @@ class AdminCategoryResource(Resource):
     def get(self): # Get all categories               
         page = request.args.get('page', 1, type=int) # Get the page number from the query string
 
-        results = CategoryService.get_categories(page) 
+        results = CategoryService.get_all_admin_categories(page) 
 
         response = {
             'categories': marshal(results['categories'], category_model),
@@ -77,14 +62,6 @@ class AdminCategoryResource(Resource):
     
 @category_ns.route('/admin/<int:category_id>', methods=['PUT', 'DELETE'])
 class AdminCategoryResource(Resource):
-    # @jwt_required()
-    # @admin_required()
-    # @handle_exceptions
-    # def get(self, category_id): # Get category details
-    #     category = CategoryService.get_category(category_id)
-
-    #     return marshal(category, category_model), 200
-
     @jwt_required()
     @admin_required()
     @handle_exceptions

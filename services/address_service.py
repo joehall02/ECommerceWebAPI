@@ -55,6 +55,7 @@ class AddressService:
 
     @staticmethod
     def get_all_addresses():
+        print('Fetching addresses')
         user = get_jwt_identity() # Get the user id from the access token
 
         if not user:
@@ -67,7 +68,6 @@ class AddressService:
             raise ValidationError('Addresses not found')
         
         addresses = address_schema.dump(addresses, many=True)
-
         
         return addresses
 

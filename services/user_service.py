@@ -1,12 +1,12 @@
 from datetime import datetime, timedelta
-from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity, set_access_cookies, set_refresh_cookies, get_csrf_token
+from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity, set_access_cookies, set_refresh_cookies
 from sqlalchemy import extract
 from models import User, Cart, Order
 from flask import current_app, make_response, jsonify
 from marshmallow import ValidationError
 from schemas import SignupSchema, LoginSchema, UserSchema, UserAdminSchema
 from werkzeug.security import generate_password_hash, check_password_hash
-from exts import db
+from exts import db, cache
 import requests
 from services.utils import send_email, generate_verification_token, verify_token
 
@@ -18,16 +18,6 @@ user_schema = UserSchema()
 
 # Services
 class UserService:
-    # @staticmethod
-    # def send_email(data):
-    #     if not data:
-    #         raise ValidationError('No data provided')
-        
-    #     # Validate the request data against the email schema
-    #     valid_data = email_schema.load(data)
-
-    #     send_email(data=valid_data)
-
     @staticmethod
     def create_user(data):
         # Check if data is provided
@@ -94,6 +84,10 @@ class UserService:
 
         new_user.last_verification_email_sent = datetime.now()
         new_user.save()
+
+        # Clear the cache
+        cache.delete_memoized(UserService.get_all_admin_users)
+        cache.delete_memoized(UserService.get_dashboard_data)
 
         return new_user
     
@@ -201,13 +195,9 @@ class UserService:
         # Create a response
         response = make_response(jsonify({'message': 'Guest user created', 'access_token': access_token, 'refresh_token': refresh_token}))
 
-        # # Set the x-csrf-token header
-        # response.headers['x-access-csrf-token'] = get_csrf_token(access_token)
-        # response.headers['x-refresh-csrf-token'] = get_csrf_token(refresh_token)
-
-        # Set HTTP-only cookies for the access and refresh tokens
-        # set_access_cookies(response, access_token)
-        # set_refresh_cookies(response, refresh_token)
+        # Clear the cache
+        cache.delete_memoized(UserService.get_all_admin_users)
+        cache.delete_memoized(UserService.get_dashboard_data)
 
         return new_user.id, response
 
@@ -237,17 +227,10 @@ class UserService:
         
         # Create a response
         response = make_response(jsonify({'message': 'Login successful'}))
-
-        # Set the x-csrf-token header
-        # response.headers['x-access-csrf-token'] = get_csrf_token(access_token)
-        # response.headers['x-refresh-csrf-token'] = get_csrf_token(refresh_token)
         
         # Set HTTP-only cookies for the access and refresh tokens
         set_access_cookies(response, access_token)
         set_refresh_cookies(response, refresh_token)
-
-        # set_access_cookies(response, access_token, max_age=current_app.config['JWT_ACCESS_TOKEN_EXPIRES'].total_seconds())
-        # set_refresh_cookies(response, refresh_token, max_age=current_app.config['JWT_REFRESH_TOKEN_EXPIRES'].total_seconds())
 
         return response
 
@@ -273,36 +256,23 @@ class UserService:
                 is_admin = False
                 is_customer = False
 
-        # access_token = create_access_token(identity=current_user_id, expires_delta=current_app.config['JWT_ACCESS_TOKEN_EXPIRES']) # Create a new access token
-
         response = make_response(jsonify(logged_in=logged_in, is_admin=is_admin, is_customer=is_customer))
 
         print("logged in: ", logged_in)
         print("is admin: ", is_admin)
         print("is customer:", is_customer)
 
-        # # Set the x-csrf-token header
-        # response.headers['x-access-csrf-token'] = get_csrf_token(access_token)
-
-        # # Set the new access token as an HTTP-only cookie
-        # set_access_cookies(response, access_token, max_age=current_app.config['JWT_ACCESS_TOKEN_EXPIRES'].total_seconds())
-
         return response
         
-
     @staticmethod
     def refresh_token():
         current_user_id = get_jwt_identity()
         new_access_token = create_access_token(identity=current_user_id, expires_delta=current_app.config['JWT_ACCESS_TOKEN_EXPIRES']) # Create a new access token
 
-        response = make_response(jsonify({'message': 'Token refreshed'}))
-
-        # # Set the x-csrf-token header
-        # response.headers['x-access-csrf-token'] = get_csrf_token(new_access_token)        
+        response = make_response(jsonify({'message': 'Token refreshed'}))     
 
         # Set the new access token as an HTTP-only cookie
         set_access_cookies(response, new_access_token)
-        # set_access_cookies(response, new_access_token, max_age=current_app.config['JWT_ACCESS_TOKEN_EXPIRES'].total_seconds())
 
         return response
     
@@ -385,29 +355,6 @@ class UserService:
         user.save()
 
         return user
-
-        # # Check if the data is provided
-        # if not data:
-        #     raise ValidationError('No data provided')
-        
-        # # Validate the request data against the login schema
-        # valid_data = login_schema.load(data)
-
-        # # Check the length of the password
-        # if (len(valid_data['password']) < 8):
-        #     raise ValidationError('Password must be at least 8 characters long')
-
-        # user = User.query.filter_by(email=valid_data['email']).first() # Get the user with the provided email
-
-        # if not user:
-        #     raise ValidationError('User not found')
-        
-        # # Update the user's password
-        # user.password = generate_password_hash(valid_data['password'])
-
-        # user.save()
-
-        # return user
     
     @staticmethod
     def edit_name(data):
@@ -431,6 +378,9 @@ class UserService:
 
         user.save()
 
+        # Clear the cache
+        cache.delete_memoized(UserService.get_all_admin_users)
+
         return user
 
     @staticmethod
@@ -450,6 +400,10 @@ class UserService:
                     raise ValidationError('Cannot delete account with pending orders')
         
         user.delete()
+
+        # Clear the cache
+        cache.delete_memoized(UserService.get_all_admin_users)
+        cache.delete_memoized(UserService.get_dashboard_data)
 
         return user
         
@@ -495,7 +449,9 @@ class UserService:
         return user
     
     @staticmethod
+    @cache.memoize(timeout=86400) # Cache for 24 hours
     def get_dashboard_data():
+        print('Fetching dashboard data')
         # Get current user
         current_user_id = get_jwt_identity()
 
@@ -557,12 +513,18 @@ class UserService:
                 for guest_user in guest_users:
                     guest_user.delete()
 
+                # Clear the cache
+                cache.delete_memoized(UserService.get_all_admin_users)
+                cache.delete_memoized(UserService.get_dashboard_data)                
+
                 return {'message': 'Old guest users deleted'}
         except Exception as e:
             return {'message': str(e)}
         
     @staticmethod
+    @cache.memoize(timeout=86400) # Cache for 24 hours
     def get_all_admin_users(page):
+        print('Fetching admin users')
         query = User.query.order_by(User.created_at.desc()) # Get all users ordered by the date they were created
 
         # Paginate the results
@@ -626,38 +588,3 @@ class UserService:
             raise Exception(f"Failed to send email: {response.text}")
         
         return response.json()
-
-
-        # Validate the request data against the email schema
-        # valid_data = email_schema.load(data)
-
-        # # Get the orders for the user
-        # orders = Order.query.filter_by(user_id=user_id).all()
-
-        # all_data = {
-        #     'user': user,
-        #     'orders': []
-        # }        
-
-        # for order in orders:
-        #     order_items = []
-
-        #     for order_item in order.order_items:
-
-        #         # Get the product image
-        #         product_image = ProductImage.query.filter_by(product_id=order_item.product_id).first()
-
-        #         if product_image:
-        #             order_item.product_image = product_image.image_path
-
-        #         order_items.append(order_item)
-            
-        #     all_data['orders'].append({
-        #         'order': order,
-        #         'order_items': order_items
-        #     })
-
-        # # Serialise the data
-        # user_and_orders = user_order_combined_schema.dump(all_data)
-
-        # return user_and_orders

@@ -1,4 +1,3 @@
-from datetime import timedelta
 from flask import Flask
 from flask_restx import Api
 from config import Development, Test
@@ -6,14 +5,11 @@ from flask_jwt_extended import JWTManager
 from flask_migrate import Migrate, upgrade
 from flask_cors import CORS
 from dotenv import load_dotenv
-from exts import db
-import os
-from models import User, Address, Category, Product, Cart, Order, OrderItem, CartProduct, ProductImage, FeaturedProduct
+from exts import db, limiter, cache
 from api.user import user_ns
 from api.category import category_ns
 from api.product import product_ns
 from api.order import order_ns
-# from api.payment import payment_ns
 from api.address import address_ns
 from api.cart import cart_ns
 import stripe
@@ -27,9 +23,15 @@ def create_app(config=Development):
     # Set the app configuration
     app.config.from_object(config)
 
-    # Initialize the database
+    # Initialise the database
     db.init_app(app)
     
+    # Initialise the rate limiter
+    limiter.init_app(app)
+
+    # Initialise the cache
+    cache.init_app(app)
+
     # Initialise the Stripe API
     stripe.api_key = app.config['STRIPE_API_KEY']
 
@@ -39,11 +41,10 @@ def create_app(config=Development):
     # Enable CORS
     CORS(app, supports_credentials=True, origins=[app.config['FRONTEND_URL']]) 
 
-    # Initialize the JWT manager
+    # Initialise the JWT manager
     jwt = JWTManager(app)
-    
 
-    # Initialize the migration engine
+    # Initialise the migration engine
     migrate = Migrate(app, db)
 
     # Create an instance of the API

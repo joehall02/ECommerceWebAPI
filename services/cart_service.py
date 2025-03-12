@@ -1,4 +1,4 @@
-from flask import jsonify, make_response, current_app
+from flask import jsonify, make_response
 from marshmallow import ValidationError
 from models import Cart, CartProduct, Product
 from flask_jwt_extended import get_jwt_identity, set_access_cookies, set_refresh_cookies
@@ -123,7 +123,7 @@ class CartService:
         if existing_cart_product:
             existing_cart_product.quantity = valid_data['quantity']
             existing_cart_product.save()
-            return existing_cart_product
+            return cart_product_schema.dump(existing_cart_product)
 
         # Otherwise create a new cart product if it doesn't exist already
         cart_product = CartProduct(
@@ -141,9 +141,7 @@ class CartService:
         response = make_response(jsonify(cart_product_data))
 
         # If a guest user was created, set the user token to the response
-        if 'guest_response' in locals():
-            # response.headers['x-access-csrf-token'] = guest_response.headers['x-access-csrf-token']
-            # response.headers['x-refresh-csrf-token'] = guest_response.headers['x-refresh-csrf-token']
+        if 'guest_response' in locals():            
             set_access_cookies(response, guest_response.json['access_token'])
             set_refresh_cookies(response, guest_response.json['refresh_token'])
 

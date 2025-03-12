@@ -1,13 +1,10 @@
 from marshmallow import ValidationError
 from models import Product, Category, FeaturedProduct, ProductImage
 from werkzeug.utils import secure_filename
-from dotenv import load_dotenv
 from schemas import ProductSchema, ProductImageSchema, FeaturedProductSchema, ProductShopSchema, ProductAdminSchema
 import stripe
 from services.utils import allowed_file, upload_image_to_google_cloud_storage, remove_image_from_google_cloud_storage
-
-# Load environment variables
-load_dotenv()
+from exts import cache
 
 # Define the schema instances
 product_schema = ProductSchema()
@@ -75,10 +72,17 @@ class ProductService:
             new_product.delete()
             raise ValidationError(f"Failed to create product in Stripe: {str(e)}")
 
+        # Clear the cache
+        cache.delete_memoized(ProductService.get_all_products)
+        cache.delete_memoized(ProductService.get_all_admin_products)
+        cache.delete_memoized(ProductService.get_product)
+
         return new_product
 
-    @staticmethod
+    @staticmethod    
+    @cache.memoize(timeout=86400) # Cache the results for 24 hours
     def get_all_products(page=1, per_page=9, category_id=None, sort_by=None):
+        print('Fetching products')
         query = Product.query.filter(Product.stock > 0) # Get all products with stock greater than 0
         
         # Check if a category id is provided
@@ -130,7 +134,9 @@ class ProductService:
         }
     
     @staticmethod
+    @cache.memoize(timeout=86400) # Cache the results for 24 hours
     def get_all_admin_products(page=1, per_page=10, category_id=None):
+        print('Fetching admin products')
         query = Product.query.order_by(Product.id.desc()) # Get all products in descending order of id (latest products first)
 
         if category_id:
@@ -155,7 +161,9 @@ class ProductService:
         }
 
     @staticmethod
+    @cache.memoize(timeout=86400) # Cache the results for 24 hours
     def get_product(product_id):
+        print('Fetching product')
         # Check if the product id is provided
         if not product_id:
             raise ValidationError('No product id provided')
@@ -251,6 +259,11 @@ class ProductService:
         for key, value in valid_data.items():
             setattr(product, key, value) 
 
+        # Clear the cache
+        cache.delete_memoized(ProductService.get_all_products)
+        cache.delete_memoized(ProductService.get_all_admin_products)
+        cache.delete_memoized(ProductService.get_product)
+
         product.save()
 
         return product
@@ -277,6 +290,11 @@ class ProductService:
 
         # Delete the product
         product.delete()
+
+        # Clear the cache
+        cache.delete_memoized(ProductService.get_all_products)
+        cache.delete_memoized(ProductService.get_all_admin_products)
+        cache.delete_memoized(ProductService.get_product)
 
         return product
     
@@ -309,10 +327,15 @@ class FeaturedProductService:
 
         new_featured_product.save()
 
+        # Clear the cache
+        cache.delete_memoized(FeaturedProductService.get_all_featured_products)
+
         return new_featured_product
     
     @staticmethod
+    @cache.memoize(timeout=86400) # Cache the results for 24 hours
     def get_all_featured_products():
+        print('Fetching featured products')
         featured_products = FeaturedProduct.query.all()
 
         # Check if there are any featured products
@@ -327,44 +350,23 @@ class FeaturedProductService:
         product_list = []
         
         for product in products:
-            image_path = product.product_images[0].image_path if product.product_images else None # Get the first image path if it exists
-            product_data = {
-                'id': product.id,
-                'name': product.name,                
-                'price': product.price,                                
-                'image_path': image_path,
-                'category_name': product.category.name
-            }
-            product_list.append(product_data)
+            # If products stock is 0, dont add it to the list
+            if product.stock > 0:
+                image_path = product.product_images[0].image_path if product.product_images else None # Get the first image path if it exists
+                product_data = {
+                    'id': product.id,
+                    'name': product.name,                
+                    'price': product.price,                                
+                    'image_path': image_path,
+                    'category_name': product.category.name
+                }            
+
+                product_list.append(product_data)
 
         # Serialize the data
         featured_products = product_shop_schema.dump(product_list, many=True)
 
         return featured_products
-    
-    @staticmethod
-    def get_featured_product(featured_product_id):
-        # Check if the featured product id is provided
-        if not featured_product_id:
-            raise ValidationError('No featured product id provided')
-
-        featured_product = FeaturedProduct.query.get(featured_product_id)
-
-        # Check if the featured product exists
-        if not featured_product:
-            raise ValidationError('Featured product not found')
-        
-        # Get the product associated with the featured product
-        product = featured_product.product
-
-        # Check if the product exists
-        if not product:
-            raise ValidationError('Product not found')
-        
-        # Serialize the data
-        featured_product = product_schema.dump(featured_product)
-        
-        return product
     
     @staticmethod
     def check_featured_product(product_id):
@@ -397,9 +399,48 @@ class FeaturedProductService:
         
         featured_product.delete()
 
+        # Clear the cache
+        cache.delete_memoized(FeaturedProductService.get_all_featured_products)
+
         return featured_product
     
 class ProductImageService:
+    @staticmethod
+    def create_product_image(data):
+        # Check if data is provided
+        if not data:
+            raise ValidationError('No data provided')
+
+        # Validate the request data using the schema
+        valid_data = product_image_schema.load(data)
+
+        product = Product.query.get(valid_data['product_id'])
+
+        # Check if the product exists
+        if not product:
+            raise ValidationError('Product not found')
+        
+        # Check if the product already has an image
+        product_image = ProductImage.query.filter_by(product_id=valid_data['product_id']).first()
+
+        # if product_image exists, delete the image and create a new one
+        if product_image:
+            remove_image_from_google_cloud_storage(product_image.image_path)
+            product_image.delete()
+        
+        new_product_image = ProductImage(
+            image_path = valid_data['image_path'],
+            product_id = valid_data['product_id']
+        )
+
+        new_product_image.save()
+
+        # Clear the cache
+        cache.delete_memoized(ProductImageService.get_product_image)
+
+        return new_product_image
+
+    @staticmethod    
     def upload_product_image(image_file, product_id):
         # Check if the product id is provided
         if not product_id:
@@ -431,40 +472,23 @@ class ProductImageService:
             images=["https://storage.googleapis.com/" + image_path]
         )
 
-        return image_path    
+        data = {
+            'image_path': image_path,
+            'product_id': product_id
+        }
 
-    def create_product_image(data):
-        # Check if data is provided
-        if not data:
-            raise ValidationError('No data provided')
+        # Create a new product image
+        new_product_image = ProductImageService.create_product_image(data)
 
-        # Validate the request data using the schema
-        valid_data = product_image_schema.load(data)
-
-        product = Product.query.get(valid_data['product_id'])
-
-        # Check if the product exists
-        if not product:
-            raise ValidationError('Product not found')
-        
-        # Check if the product already has an image
-        product_image = ProductImage.query.filter_by(product_id=valid_data['product_id']).first()
-
-        # if product_image exists, delete the image and create a new one
-        if product_image:
-            remove_image_from_google_cloud_storage(product_image.image_path)
-            product_image.delete()
-        
-        new_product_image = ProductImage(
-            image_path = valid_data['image_path'],
-            product_id = valid_data['product_id']
-        )
-
-        new_product_image.save()
+        # Clear the cache
+        cache.delete_memoized(ProductImageService.get_product_image)
 
         return new_product_image
-
+    
+    @staticmethod
+    @cache.memoize(timeout=86400) # Cache the results for 24 hours
     def get_product_image(product_id):
+        print('Fetching product image')
         # Check if the product id is provided
         if not product_id:
             raise ValidationError('No product id provided')
@@ -486,6 +510,7 @@ class ProductImageService:
         
         return product_image
 
+    @staticmethod
     def delete_product_image(product_image_id):
         # Check if the product image id is provided
         if not product_image_id:
@@ -501,5 +526,8 @@ class ProductImageService:
         remove_image_from_google_cloud_storage(product_image.image_path)        
 
         product_image.delete()
+
+        # Clear the cache
+        cache.delete_memoized(ProductImageService.get_product_image)
 
         return product_image

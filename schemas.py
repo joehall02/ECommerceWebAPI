@@ -88,13 +88,6 @@ class CategorySchema(Schema):
     id = ma_fields.Integer(required=False, error_messages={'required': 'Category ID is required', 'null': 'Category ID cannot be empty'})
     name = ma_fields.String(required=True, error_messages={'required': 'Category name is required', 'null': 'Category name cannot be empty'})
 
-# class ProductSchema(Schema):
-#     name = ma_fields.String(required=True, error_messages={'required': 'Product name is required', 'null': 'Product name cannot be empty'})
-#     description = ma_fields.String(required=True, error_messages={'required': 'Product description is required', 'null': 'Product description cannot be empty'})
-#     price = ma_fields.Decimal(required=True, error_messages={'required': 'Product price is required', 'null': 'Product price cannot be empty'})
-#     stock = ma_fields.Integer(required=True, error_messages={'required': 'Product stock is required', 'null': 'Product stock cannot be empty'})
-#     category_id = ma_fields.Integer(required=True, error_messages={'required': 'Category ID is required', 'null': 'Category ID cannot be empty'})
-
 # Cart schemas
 class CartSchema(Schema):
     user_id = ma_fields.Integer(required=True, error_messages={'required': 'User ID is required', 'null': 'User ID cannot be empty'})
@@ -108,10 +101,6 @@ class CartProductSchema(Schema):
 class ProductCartProductCombinedSchema(Schema):
     product = ma_fields.Nested(ProductShopSchema)
     cart_product = ma_fields.Nested(CartProductSchema)
-
-# Payment schemas
-# class PaymentSchema(Schema):
-#     stripe_payment_id = ma_fields.String(required=True, error_messages={'required': 'Stripe payment ID is required', 'null': 'Stripe payment ID cannot be empty'})
 
 # Address schemas
 class AddressSchema(Schema):
@@ -131,10 +120,6 @@ class UserSchema(Schema):
     stripe_customer_id = ma_fields.String(required=False, error_messages={'null': 'Stripe customer ID cannot be empty'})
     created_at = ma_fields.DateTime(required=True, error_messages={'required': 'Created at is required', 'null': 'Created at cannot be empty'})
     role = ma_fields.String(required=True, error_messages={'required': 'Role is required', 'null': 'Role cannot be empty'})
-
-class UserOrderCombinedSchema(Schema):
-    user = ma_fields.Nested(UserSchema)
-    orders = ma_fields.List(ma_fields.Nested(OrderItemCombinedSchema))
 
 class UserAdminSchema(Schema):
     id = ma_fields.Integer(required=False, error_messages={'required': 'User ID is required', 'null': 'User ID cannot be empty'})

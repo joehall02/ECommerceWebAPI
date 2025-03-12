@@ -8,10 +8,6 @@ cart_ns = Namespace('cart', description='Cart operations')
 
 # Define the models used for api documentation,
 # actual validation is done using the schema
-cart_model = cart_ns.model('Cart', {
-    'user_id': fields.Integer(required=True),
-})
-
 cart_product_model = cart_ns.model('CartProduct', {
     'id': fields.Integer(required=True),
     'quantity': fields.Integer(required=True),
