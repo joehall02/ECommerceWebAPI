@@ -7,8 +7,7 @@ from marshmallow import ValidationError
 from schemas import SignupSchema, LoginSchema, UserSchema, UserAdminSchema
 from werkzeug.security import generate_password_hash, check_password_hash
 from exts import db, cache
-import requests
-from services.utils import send_email, generate_verification_token, verify_token
+from services.utils import send_email, generate_verification_token, verify_token, send_contact_us_email
 
 # Define the schema instances
 signup_schema = SignupSchema()
@@ -566,25 +565,7 @@ class UserService:
         # Check if data is provided
         if not data:
             raise ValidationError('No data provided')
+
+        response = send_contact_us_email(data)
         
-        print("Sending contact us email")
-
-        url = f"https://api.mailgun.net/v3/{current_app.config['MAILGUN_DOMAIN_NAME']}/messages"
-        auth = ("api", current_app.config['MAILGUN_API_KEY'])
-        data = {
-            "from": f"{data['from_name']} <{data['from_email']}>",
-            "to": f"{current_app.config['CONTACT_US_EMAIL']}",
-            "subject": f"Contact us: {data['subject']}",
-            "text": data['message']
-        }
-
-        response = requests.post(url, auth=auth, data=data)
-
-        # Print the response status code and text for debugging
-        print(f"Response Status Code: {response.status_code}")
-        print(f"Response Text: {response.text}")
-
-        if response.status_code != 200:
-            raise Exception(f"Failed to send email: {response.text}")
-        
-        return response.json()
+        return response

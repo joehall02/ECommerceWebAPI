@@ -16,7 +16,6 @@ user_model = user_ns.model('User', {
     'stripe_customer_id': fields.String(required=False),
     'created_at': fields.DateTime(required=True),
     'role': fields.String(required=True),
-
 })
 
 user_admin_model = user_ns.model('UserAdmin', {
@@ -32,9 +31,9 @@ class SignupResource(Resource):
     def post(self): # Create a new user account
         data = request.get_json()
 
-        UserService.create_user(data)
+        response = UserService.create_user(data)
 
-        return {'message': 'Account created successfully'}, 201
+        return marshal(response, user_model), 201
 
 @user_ns.route('/login', methods=['POST'])
 class LoginResource(Resource):
@@ -75,6 +74,7 @@ class ResendVerificationResource(Resource):
 
 @user_ns.route('/logout', methods=['POST'])
 class LogoutResource(Resource):
+    @jwt_required()
     @handle_exceptions
     def post(self):
         response = jsonify({'message': 'Logout successful'})
@@ -135,7 +135,6 @@ class DeleteAccountResource(Resource):
 
         return {'message': 'Account deleted successfully'}, 200
 
-
 @user_ns.route('/refresh', methods=['POST'])
 class RefreshResource(Resource):
     @jwt_required(refresh=True) # Ensure that the user is authenticated
@@ -158,7 +157,7 @@ class UserResource(Resource):
 @user_ns.route('/contact-us', methods=['POST'])
 class ContactUsResource(Resource):
     @handle_exceptions    
-    @limiter.limit("3 per day") # Limit the number of requests to 3 per day
+    @limiter.limit("2 per day") # Limit the number of requests to 2 per day
     def post(self): # Send contact us email
         data = request.get_json()
 

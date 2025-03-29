@@ -5,7 +5,7 @@ from flask_jwt_extended import get_jwt_identity
 from schemas import OrderSchema, OrderItemSchema, OrderItemCombinedSchema, OrderAdminSchema, OrderItemCombinedAdminSchema
 import stripe
 from flask import current_app
-from services.utils import send_email
+from services.utils import send_email, create_stripe_checkout_session
 from services.product_service import ProductService, FeaturedProductService
 from services.user_service import UserService
 from exts import cache
@@ -64,25 +64,7 @@ class OrderService:
             })
 
         # Create a stripe checkout session
-        session = stripe.checkout.Session.create(
-            payment_method_types=['card'],
-            line_items=line_items,
-            mode='payment',
-            success_url=f'{current_app.config['FRONTEND_URL']}/checkout/success',
-            cancel_url=f'{current_app.config['FRONTEND_URL']}/checkout/cancel',
-            customer_email=user.email if not user.stripe_customer_id else None, # Attach the email to the session if the user doesn't have a stripe customer id
-            customer=user.stripe_customer_id if user.stripe_customer_id else None, # Attach the customer to the session if one exists
-            customer_creation='always' if not user.stripe_customer_id else None, # Create a new customer if one doesn't exist
-
-            metadata={
-                'user_id': user.id,
-                'full_name': valid_data['full_name'],
-                'address_line_1': valid_data['address_line_1'],
-                'address_line_2': valid_data['address_line_2'] if 'address_line_2' in valid_data else None,
-                'city': valid_data['city'],
-                'postcode': valid_data['postcode'],
-            }
-        )
+        session = create_stripe_checkout_session(user, valid_data, line_items)
 
         return {'session_id': session.id}
 

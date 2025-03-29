@@ -75,6 +75,9 @@ class CategoryService:
     
     @staticmethod
     def get_category(category_id):
+        if not category_id:
+            raise ValidationError('No category id provided')
+
         category = Category.query.get(category_id)
 
         # Check if the category exists

@@ -5,6 +5,7 @@ from decorators import admin_required
 from services.order_service import OrderService
 from decorators import handle_exceptions, customer_required
 from models import User
+from services.utils import stripe_webhook_handler
 import stripe
 
 order_ns = Namespace('order', description='Order operations')
@@ -147,56 +148,15 @@ class AdminOrderResource(Resource):
 @order_ns.route('/webhook', methods=['POST'])
 class OrderResource(Resource):
     @handle_exceptions
-    def post(self): # Handle stripe webhook
+    def post(self):
         payload = request.get_data(as_text=True)
         sig_header = request.headers.get('Stripe-Signature')
 
-        try:
-            event = stripe.Webhook.construct_event(
-                payload, sig_header, stripe.webhook_secret
-            )
-        except ValueError as e:
-            # Invalid payload
-            return {'error': str(e)}, 400
-        except stripe.error.SignatureVerificationError as e:
-            # Invalid signature
-            return {'error': str(e)}, 400
+        order_data = stripe_webhook_handler(payload, sig_header)
+
+        if order_data:
+            response = OrderService.create_order(order_data)
+        else:
+            return {'message': 'Webhook received but no order data processed'}, 200
         
-        # Handle the event
-        if event['type'] == 'checkout.session.completed':
-            session = event['data']['object'] # Contains a stripe checkout session            
-            customer_email = session['customer_details']['email']
-
-            # Extract the metadata, which contains the user id and address details
-            metadata = session['metadata']
-            user_id = metadata['user_id']
-            full_name = metadata['full_name']
-            address_line_1 = metadata['address_line_1']
-            address_line_2 = metadata['address_line_2']
-            city = metadata['city']
-            postcode = metadata['postcode']
-
-            
-            # Create a new order
-            data = {
-                'user_id': user_id,
-                'full_name': full_name,
-                'address_line_1': address_line_1,
-                'address_line_2': address_line_2,
-                'city': city,
-                'postcode': postcode,
-                'customer_email': customer_email
-            }
-
-            # Extract the stripe customer id
-            stripe_customer_id = session['customer']
-
-            user = User.query.get(user_id)
-
-            if user:
-                user.stripe_customer_id = stripe_customer_id
-                user.save()
-                
-            OrderService.create_order(data)
-            
-        return {'message': 'Webhook received'}, 200
+        return marshal(response, order_model), 200

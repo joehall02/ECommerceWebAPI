@@ -64,6 +64,6 @@ class CartProductAddResource(Resource):
     def post(self, product_id): # Add a product to the cart        
         data = request.get_json()
 
-        repsonse = CartService.add_product_to_cart(data, product_id)        
+        CartService.add_product_to_cart(data, product_id)        
         
-        return repsonse
+        return {'message': 'Product added to cart successfully'}, 201

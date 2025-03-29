@@ -155,9 +155,9 @@ class AdminFeaturedProduct(Resource):
     @admin_required()
     @handle_exceptions
     def post(self, product_id): # Add a product to the featured products                
-        FeaturedProductService.add_featured_product(product_id)
+        response = FeaturedProductService.add_featured_product(product_id)
         
-        return {'message': 'Product added to featured products successfully'}, 201
+        return marshal(response, featured_product_model), 201
 
 @product_ns.route('/admin/featured-product/<int:featured_product_id>', methods=['DELETE'])
 class AdminFeaturedProduct(Resource):
@@ -170,7 +170,7 @@ class AdminFeaturedProduct(Resource):
         return {'message': 'Product removed from featured products successfully'}, 200
 
 # Define the routes for the product image operations
-@product_ns.route('/admin/product-image/<int:product_id>', methods=['POST', 'GET'])
+@product_ns.route('/admin/product-image/<int:product_id>', methods=['POST'])
 class AdminProductImageResource(Resource):
     @jwt_required()
     @admin_required()
@@ -185,12 +185,12 @@ class AdminProductImageResource(Resource):
         
         return {'message': 'Product image created successfully'}, 201
 
-@product_ns.route('/admin/product-image/<int:product_image_id>', methods=['DELETE'])
-class AdminProductImageResource(Resource):
-    @jwt_required()
-    @admin_required()
-    @handle_exceptions
-    def delete(self, product_image_id): # Delete a product image for a product        
-        ProductImageService.delete_product_image(product_image_id)        
+# @product_ns.route('/admin/product-image/<int:product_image_id>', methods=['DELETE'])
+# class AdminProductImageResource(Resource):
+#     @jwt_required()
+#     @admin_required()
+#     @handle_exceptions
+#     def delete(self, product_image_id): # Delete a product image for a product        
+#         ProductImageService.delete_product_image(product_image_id)        
         
-        return {'message': 'Product image deleted successfully'}, 200
+#         return {'message': 'Product image deleted successfully'}, 200

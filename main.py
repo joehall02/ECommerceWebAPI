@@ -4,8 +4,7 @@ from config import Development, Test
 from flask_jwt_extended import JWTManager
 from flask_migrate import Migrate, upgrade
 from flask_cors import CORS
-from dotenv import load_dotenv
-from exts import db, limiter, cache
+from exts import db, init_extensions, limiter, cache
 from api.user import user_ns
 from api.category import category_ns
 from api.product import product_ns
@@ -23,14 +22,8 @@ def create_app(config=Development):
     # Set the app configuration
     app.config.from_object(config)
 
-    # Initialise the database
-    db.init_app(app)
-    
-    # Initialise the rate limiter
-    limiter.init_app(app)
-
-    # Initialise the cache
-    cache.init_app(app)
+    # Initialise the extensions, db, limiter, cache and redis
+    init_extensions(app, config)
 
     # Initialise the Stripe API
     stripe.api_key = app.config['STRIPE_API_KEY']
@@ -48,7 +41,8 @@ def create_app(config=Development):
     migrate = Migrate(app, db)
 
     # Create an instance of the API
-    api = Api(app, doc='/docs') 
+    # api = Api(app, doc='/docs') 
+    api = Api(app) 
 
     # # If the configuration is Test, upgrade the database to the latest migration
     # if config == Test:
@@ -61,7 +55,6 @@ def create_app(config=Development):
     api.add_namespace(category_ns)
     api.add_namespace(product_ns)
     api.add_namespace(order_ns)
-    # api.add_namespace(payment_ns)
     api.add_namespace(address_ns)
     api.add_namespace(cart_ns)
 

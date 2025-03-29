@@ -34,9 +34,9 @@ class AddressResource(Resource):
     def post(self): # Create a new address
         data = request.get_json()
 
-        AddressService.create_address(data)        
+        response = AddressService.create_address(data)        
         
-        return {'message': 'Address created successfully'}, 201
+        return marshal(response, address_model), 201
     
 @address_ns.route('/default', methods=['GET'])
 class AddressResource(Resource):

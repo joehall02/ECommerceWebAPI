@@ -2,8 +2,7 @@ from marshmallow import ValidationError
 from models import Product, Category, FeaturedProduct, ProductImage
 from werkzeug.utils import secure_filename
 from schemas import ProductSchema, ProductImageSchema, FeaturedProductSchema, ProductShopSchema, ProductAdminSchema
-import stripe
-from services.utils import allowed_file, upload_image_to_google_cloud_storage, remove_image_from_google_cloud_storage
+from services.utils import allowed_file, upload_image_to_google_cloud_storage, remove_image_from_google_cloud_storage, create_stripe_product_and_price, update_stripe_product_and_price, upload_image_to_stripe_product
 from exts import cache
 
 # Define the schema instances
@@ -45,32 +44,8 @@ class ProductService:
 
         new_product.save()
 
-        try:
-            # Create product in stripe
-            stripe_product = stripe.Product.create(
-                name=new_product.name,
-                description=new_product.description,
-                metadata={
-                    'product_id': new_product.id # Track local product id in stripe
-                }
-            )
-
-            # Create price in stripe
-            stripe_price = stripe.Price.create(
-                unit_amount=int(new_product.price * 100), # Convert price to pence
-                currency='gbp', # Set currency to GBP
-                product=stripe_product.id
-            )
-
-            # Update the product with the stripe product and price ids
-            new_product.stripe_product_id = stripe_product.id
-            new_product.stripe_price_id = stripe_price.id
-
-            new_product.save()
-
-        except Exception as e:
-            new_product.delete()
-            raise ValidationError(f"Failed to create product in Stripe: {str(e)}")
+        # Create the product and price objects in Stripe
+        create_stripe_product_and_price(new_product)
 
         # Clear the cache
         cache.delete_memoized(ProductService.get_all_products)
@@ -208,51 +183,12 @@ class ProductService:
             if not category:
                 raise ValidationError('Category not found')
 
-        # Check if name is provided, if so, update the stripe product
-        if 'name' in valid_data:
-            try:
-                stripe.Product.modify(
-                    product.stripe_product_id,
-                    name=valid_data['name']                    
-                )
-            except Exception as e:
-                raise ValidationError(f"Failed to update product in Stripe: {str(e)}")
-
-        # Check if description is provided, if so, update the stripe product
-        if 'description' in valid_data:
-            try:
-                stripe.Product.modify(
-                    product.stripe_product_id,
-                    description=valid_data['description']                    
-                )
-            except Exception as e:
-                raise ValidationError(f"Failed to update product in Stripe: {str(e)}")
-
+        # Update the stripe product and price objects
+        update_stripe_product_and_price(product, valid_data)
+        
         if 'stock' in valid_data:
             if valid_data['stock'] < 0:
                 raise ValidationError('Stock cannot be a negative number')
-
-        # Check if price is provided, if so, update the stripe price
-        if 'price' in valid_data:
-            try:
-                # Set the price to inactive in stripe
-                stripe.Price.modify(
-                    product.stripe_price_id,
-                    active=False # Set the price to inactive
-                )
-
-                # Create a new price in stripe
-                stripe_price = stripe.Price.create(
-                    unit_amount=int(valid_data['price'] * 100), # Convert price to pence
-                    currency='gbp', # Set currency to GBP
-                    product=product.stripe_product_id
-                )
-
-                # Update the product with the new stripe price id
-                product.stripe_price_id = stripe_price.id
-
-            except Exception as e:
-                raise ValidationError(f"Failed to update price in Stripe: {str(e)}")
 
         # Update product details
         # Loop through the data and update the product attributes using the key-value pairs in the data
@@ -267,8 +203,7 @@ class ProductService:
         product.save()
 
         return product
-        
-
+       
     @staticmethod
     def delete_product(product_id):
         # Check if the product id is provided
@@ -467,10 +402,7 @@ class ProductImageService:
         image_path = upload_image_to_google_cloud_storage(image_file)
 
         # Upload the image file to Stripe product
-        stripe.Product.modify(
-            product.stripe_product_id,
-            images=["https://storage.googleapis.com/" + image_path]
-        )
+        upload_image_to_stripe_product(product, image_path)
 
         data = {
             'image_path': image_path,
@@ -510,24 +442,24 @@ class ProductImageService:
         
         return product_image
 
-    @staticmethod
-    def delete_product_image(product_image_id):
-        # Check if the product image id is provided
-        if not product_image_id:
-            raise ValidationError('No product image id provided')
+    # @staticmethod
+    # def delete_product_image(product_image_id):
+    #     # Check if the product image id is provided
+    #     if not product_image_id:
+    #         raise ValidationError('No product image id provided')
 
-        product_image = ProductImage.query.get(product_image_id)
+    #     product_image = ProductImage.query.get(product_image_id)
 
-        # Check if the product image exists
-        if not product_image:
-            raise ValidationError('Product image not found')
+    #     # Check if the product image exists
+    #     if not product_image:
+    #         raise ValidationError('Product image not found')
         
-        # Remove the image file from Google Cloud Storage
-        remove_image_from_google_cloud_storage(product_image.image_path)        
+    #     # Remove the image file from Google Cloud Storage
+    #     remove_image_from_google_cloud_storage(product_image.image_path)        
 
-        product_image.delete()
+    #     product_image.delete()
 
-        # Clear the cache
-        cache.delete_memoized(ProductImageService.get_product_image)
+    #     # Clear the cache
+    #     cache.delete_memoized(ProductImageService.get_product_image)
 
-        return product_image
+    #     return product_image

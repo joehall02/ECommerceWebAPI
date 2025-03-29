@@ -40,6 +40,7 @@ def handle_exceptions(fn):
         except TooManyRequests as e:
             return {'error': 'Reached limit for today. Please try again later.'}, 429
         except Exception as e:
+            print('ERROR:', e)
             return {'error': str(e)}, 500
             # return {'error': 'An unexpected error occured. Please try again later.'}, 500
         

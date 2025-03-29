@@ -25,7 +25,7 @@ class Config:
     MAILGUN_API_KEY = os.getenv('MAILGUN_API_KEY') # Get the MAILGUN API key from the environment variables
     MAILGUN_SENDER_EMAIL = os.getenv('MAILGUN_SENDER_EMAIL') # Get the MAILGUN sender email from the environment variables
     CONTACT_US_EMAIL = os.getenv('CONTACT_US_EMAIL') # Get the contact us email from the environment variables
-    CACHE_TYPE = 'redis' # Set the cache type to Redis
+    CACHE_TYPE = 'RedisCache' # Set the cache type to Redis
     CACHE_REDIS_URL = os.getenv('REDIS_URL') # Get the Redis URL from the environment variables
 
 # Development configuration class
@@ -41,4 +41,7 @@ class Production(Config):
 # Test configuration class
 class Test(Config):
     TESTING = True # Enable testing mode
-    SQLALCHEMY_DATABASE_URI = os.getenv('TEST_DATABASE_URI') # Get the test database URL from the environment variables
+    SQLALCHEMY_DATABASE_URI = os.getenv('TEST_DATABASE_URI') # Get the test database URL from the environment variables    
+    JWT_COOKIE_SECURE = False # Allow cookies to be sent over http in testing
+    CACHE_TYPE = 'SimpleCache' # Set the cache type to SimpleCache for testing
+    CACHE_DEFAULT_TIMEOUT = 300 # Set the cache timeout to 5 minutes, this makes sure that the cache is cleared after 5 minutes

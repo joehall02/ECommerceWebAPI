@@ -39,9 +39,9 @@ class AdminCategoryResource(Resource):
     def post(self): # Create new category
         data = request.get_json()
                 
-        CategoryService.create_category(data)        
+        response = CategoryService.create_category(data)        
         
-        return {'message': 'Category created successfully'}, 201
+        return marshal(response, category_model), 201
     
     @jwt_required()
     @admin_required()
