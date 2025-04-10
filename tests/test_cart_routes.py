@@ -28,7 +28,7 @@ def test_get_all_products_in_cart(request, test_client, expected_status_code, au
 
 # Test the add product to cart route
 @pytest.mark.parametrize('create_cart_product_data, expected_status_code', [
-    ("valid_cart_product_data", 201), # Success Case
+    ("valid_cart_product_data", 200), # Success Case
     ("missing_data", 400), # Failure Case: Missing Data
 ])
 

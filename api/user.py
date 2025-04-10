@@ -74,7 +74,7 @@ class ResendVerificationResource(Resource):
 
 @user_ns.route('/logout', methods=['POST'])
 class LogoutResource(Resource):
-    @jwt_required()
+    # @jwt_required()
     @handle_exceptions
     def post(self):
         response = jsonify({'message': 'Logout successful'})

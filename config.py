@@ -17,8 +17,8 @@ class Config:
     JWT_ACCESS_COOKIE_NAME = 'access_token'
     JWT_REFRESH_COOKIE_NAME = 'refresh_token'
     JWT_COOKIE_CSRF_PROTECT = False  # Set to True to enable CSRF protection    
-    JWT_COOKIE_SECURE = True # Set to True to enable secure cookies
-    JWT_COOKIE_SAMESITE = 'None' # Set the SameSite attribute for cookies    
+    JWT_COOKIE_SECURE = False # Set to True to enable secure cookies
+    JWT_COOKIE_SAMESITE = 'Lax' # Set the SameSite attribute for cookies    
     STRIPE_API_KEY = os.getenv('STRIPE_API_KEY') # Get the Stripe API key from the environment variables
     STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET') # Get the Stripe webhook secret from the environment variables
     MAILGUN_DOMAIN_NAME = os.getenv('MAILGUN_DOMAIN_NAME') # Get the MAILGUN domain name from the environment variables

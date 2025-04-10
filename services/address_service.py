@@ -25,6 +25,17 @@ class AddressService:
         
         addresses = Address.query.filter_by(user_id=user).all()
 
+        user = User.query.get(user)
+
+        # Check if the user exists
+        if not user:
+            raise ValidationError('User not found')
+        
+        # If the user is a guest, delete all other addresses before creating a new one
+        if user.role == 'guest':
+            for address in addresses:
+                address.delete()
+
         # If the user already has 5 addresses, raise an error
         if len(addresses) >= 5:
             raise ValidationError('You have reached the maximum number of addresses')
@@ -36,8 +47,9 @@ class AddressService:
                 address.save()
 
         # If this is the first address, set it as default
-        if not Address.query.filter_by(user_id=user).first():
+        if not Address.query.filter_by(user_id=user.id).first():
             valid_data['is_default'] = True
+
 
         new_address = Address(
             full_name = valid_data['full_name'],
@@ -46,7 +58,7 @@ class AddressService:
             city = valid_data['city'],
             postcode = valid_data['postcode'],
             is_default = valid_data['is_default'],
-            user_id = user
+            user_id = user.id
         )
 
         new_address.save()

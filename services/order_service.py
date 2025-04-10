@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import datetime
 from marshmallow import ValidationError
 from models import Order, OrderItem, Cart, ProductImage, Product, User
 from flask_jwt_extended import get_jwt_identity
@@ -95,7 +95,7 @@ class OrderService:
 
         # Create a new order
         new_order = Order(
-            order_date = date.today(), # Get the current date in the format YYYY-MM-DD
+            order_date = datetime.now(), # Get the current date in the format YYYY-MM-DD
             total_price = 0,
             status = 'Processing', # Default status
             full_name = valid_data['full_name'],

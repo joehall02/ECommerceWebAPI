@@ -356,7 +356,7 @@ def add_test_product_to_cart(test_client, create_test_product, test_admin_login)
 
     response = test_client.post(f'/cart/{product_id}', json=quantityData)
 
-    assert response.status_code == 201
+    assert response.status_code == 200
 
     return response
 

@@ -262,7 +262,7 @@ def test_refresh_token(request, test_client, expected_status_code, auth_required
 # Test logout user route
 @pytest.mark.parametrize('expected_status_code, auth_required', [
     (200, True), # Success Case
-    (401, False) # Unauthorised Case: User not logged in
+    # (401, False) # Unauthorised Case: User not logged in
 ])
 
 def test_logout_user(request, test_client, expected_status_code, auth_required):

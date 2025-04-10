@@ -141,9 +141,12 @@ class CartService:
         response = make_response(jsonify(cart_product_data))
 
         # If a guest user was created, set the user token to the response
-        if 'guest_response' in locals():            
+        if 'guest_response' in locals():  
             set_access_cookies(response, guest_response.json['access_token'])
             set_refresh_cookies(response, guest_response.json['refresh_token'])
+
+            print(guest_response.json['access_token'])
+            print(guest_response.json['refresh_token'])
 
         return response
     
