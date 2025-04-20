@@ -8,7 +8,7 @@ load_dotenv() # Load environment variables from the .env file
 class Config:
     SECRET_KEY = os.getenv('SECRET_KEY') # Get the secret key from the environment variables
     SECURITY_SALT = os.getenv('SECURITY_SALT') # Get the security salt from the environment variables
-    FRONTEND_URL = os.getenv('FRONTEND_URL') # Get the frontend URL from the environment variables
+    FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:3000') # Get the frontend URL from the environment variables
     # JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY') # Get the JWT secret key from the environment variables
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=30) # Set the access token expiry time
     JWT_REFRESH_TOKEN_EXPIRES = timedelta(hours=1) # Set the refresh token expiry time
@@ -17,7 +17,7 @@ class Config:
     JWT_ACCESS_COOKIE_NAME = 'access_token'
     JWT_REFRESH_COOKIE_NAME = 'refresh_token'
     JWT_COOKIE_CSRF_PROTECT = False  # Set to True to enable CSRF protection    
-    JWT_COOKIE_SECURE = False # Set to True to enable secure cookies
+    JWT_COOKIE_SECURE = True # Set to True to enable secure cookies
     JWT_COOKIE_SAMESITE = 'Lax' # Set the SameSite attribute for cookies    
     STRIPE_API_KEY = os.getenv('STRIPE_API_KEY') # Get the Stripe API key from the environment variables
     STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET') # Get the Stripe webhook secret from the environment variables
