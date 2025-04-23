@@ -1,8 +1,7 @@
 from flask import Flask
 from flask_restx import Api
-from config import Development, Test
 from flask_jwt_extended import JWTManager
-from flask_migrate import Migrate, upgrade
+from flask_migrate import Migrate
 from flask_cors import CORS
 from exts import db, init_extensions, limiter, cache
 from api.user import user_ns
@@ -12,10 +11,11 @@ from api.order import order_ns
 from api.address import address_ns
 from api.cart import cart_ns
 import stripe
-from apscheduler.schedulers.background import BackgroundScheduler
-from services.user_service import UserService
+from jwt import ExpiredSignatureError
+from flask_jwt_extended.exceptions import NoAuthorizationError
 
-def create_app(config=Development):
+
+def create_app(config):
     # Create an instance of the Flask app
     app = Flask(__name__)
 
@@ -41,14 +41,7 @@ def create_app(config=Development):
     migrate = Migrate(app, db)
 
     # Create an instance of the API
-    # api = Api(app, doc='/docs') 
     api = Api(app) 
-
-    # # If the configuration is Test, upgrade the database to the latest migration
-    # if config == Test:
-    #     with app.app_context():
-    #         db.create_all()
-    #         upgrade()
 
     # Import the namespaces
     api.add_namespace(user_ns)
@@ -58,14 +51,13 @@ def create_app(config=Development):
     api.add_namespace(address_ns)
     api.add_namespace(cart_ns)
 
-    # Start backgrounud jobs
-    def start_scheduler(app=app):
-        print('Starting scheduler')
-        scheduler = BackgroundScheduler()
-        scheduler.add_job(lambda: UserService.delete_old_guest_users(app), 'interval', hours=1) # Delete guest users
-        scheduler.start()
-
-    # Start the scheduler
-    start_scheduler()
+    # Error handler for 401 error when user is logged out
+    @api.errorhandler(NoAuthorizationError)
+    def handle_no_authorisation_error(e):
+        return {'error': 'Missing or invalid token'}, 401
+    
+    @api.errorhandler(ExpiredSignatureError)
+    def handle_expired_signature_error(e):
+        return {'error': 'Missing or invalid token'}, 401
 
     return app

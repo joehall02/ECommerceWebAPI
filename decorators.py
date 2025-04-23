@@ -5,7 +5,6 @@ from marshmallow import ValidationError
 from models import User
 from werkzeug.exceptions import TooManyRequests
 
-
 def admin_required():
     def decorator(fn):
         @wraps(fn)        

@@ -78,15 +78,16 @@ class UserService:
             'subject': 'Verify your email address',
             'text': f'Click the link to verify your email address: {verification_link}'
         }
-
+        
+        # Clear the cache
+        cache.delete_memoized(UserService.get_all_admin_users)
+        cache.delete_memoized(UserService.get_dashboard_data)
+        
         send_email(email_data)
 
         new_user.last_verification_email_sent = datetime.now()
         new_user.save()
 
-        # Clear the cache
-        cache.delete_memoized(UserService.get_all_admin_users)
-        cache.delete_memoized(UserService.get_dashboard_data)
 
         return new_user
     
@@ -499,26 +500,27 @@ class UserService:
         }
     
     @staticmethod
-    def delete_old_guest_users(app):
-        try:
-            with app.app_context(): # Ensure that the app context is available since this is not ran in a request context
-                expiration_date = datetime.now() - timedelta(hours=12)
-                
-                print("Deleting guest users")
+    def delete_old_guest_users():
+        expiration_date = datetime.now() - timedelta(days=7)
+        
+        print("Deleting guest users")
 
-                # Get all guest users that are older than expiration date
-                guest_users = User.query.filter(User.role == 'guest', User.created_at < expiration_date).all()
+        # Get all guest users that are older than expiration date
+        guest_users = User.query.filter(User.role == 'guest', User.created_at < expiration_date).all()
 
-                for guest_user in guest_users:
-                    guest_user.delete()
+        if not guest_users:
+            raise ValidationError('No guest users, older than 7 days old, found')
 
-                # Clear the cache
-                cache.delete_memoized(UserService.get_all_admin_users)
-                cache.delete_memoized(UserService.get_dashboard_data)                
+        for guest_user in guest_users:
+            guest_user.delete()
 
-                return {'message': 'Old guest users deleted'}
-        except Exception as e:
-            return {'message': str(e)}
+        # Clear the cache if any guest users were deleted
+        if (guest_users != []):
+            cache.delete_memoized(UserService.get_all_admin_users)
+            cache.delete_memoized(UserService.get_dashboard_data)           
+
+        return {'message': 'Old guest users deleted'}
+        
         
     @staticmethod
     @cache.memoize(timeout=86400) # Cache for 24 hours

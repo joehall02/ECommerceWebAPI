@@ -5,7 +5,7 @@ from main import create_app
 from config import Test
 from exts import db, limiter, cache
 from werkzeug.security import generate_password_hash
-from datetime import datetime
+from datetime import datetime, timedelta
 from models import User, Cart
 from sqlalchemy.orm import scoped_session, sessionmaker
 
@@ -131,6 +131,26 @@ def test_customer_login(test_client, test_create_users):
     cookies = response.headers.getlist('Set-Cookie')
     
     return cookies
+
+@pytest.fixture()
+def create_test_guest_user(db_session):
+    guest = User (
+        full_name = 'Guest User',        
+        password = generate_password_hash('guest'),
+        role = 'guest',
+        created_at = datetime.now() - timedelta(days=8),
+        is_verified = False
+    )
+    db.session.add(guest)
+    db.session.flush()
+    
+    cart = Cart (
+        user_id = guest.id
+    )
+    db.session.add(cart)
+    db.session.flush()
+
+    return guest
 
 @pytest.fixture
 def test_admin_login(test_client, test_create_users):    

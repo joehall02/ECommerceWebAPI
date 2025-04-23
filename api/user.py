@@ -165,7 +165,7 @@ class ContactUsResource(Resource):
 
         return {'message': 'Email sent successfully, thanks for getting in touch!'}, 200
 
-@user_ns.route('/admin', methods=['GET'])
+@user_ns.route('/admin', methods=['GET', 'DELETE'])
 class AdminResource(Resource):
     @jwt_required()
     @admin_required()
@@ -183,6 +183,14 @@ class AdminResource(Resource):
         }
 
         return response, 200
+    
+    @jwt_required()
+    @admin_required()
+    @handle_exceptions
+    def delete(self): # Delete all old guest users
+        UserService.delete_old_guest_users()
+
+        return {'message': 'Old guest users deleted successfully'}, 200
         
 @user_ns.route('/admin/<int:user_id>', methods=['GET'])
 class AdminResouce(Resource):
