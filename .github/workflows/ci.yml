@@ -1,11 +1,11 @@
 name: Backend Tests (Flask + Pytest + PostgreSQL)
 
-# Only run on main and staging branches for push and pull request events
+# Only run on master branch for push and pull request events
 on:
   push:
-    branches: [main, staging]
+    branches: [master]
   pull_request:
-    branches: [main, staging]
+    branches: [master]
   workflow_dispatch: # Allow manual trigger in GitHub UI
 
 # Defines the jobs to run in the workflow
