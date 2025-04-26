@@ -31,7 +31,7 @@ class Development(Config):
     DEBUG = True # Enable debug mode
     SQLALCHEMY_DATABASE_URI = os.getenv('DEVELOPMENT_DATABASE_URI') # Get the database URL from the environment variables
     JWT_COOKIE_SECURE = True # Set to True to enable secure cookies
-    JWT_COOKIE_SAMESITE = 'Lax' # Set the SameSite attribute for cookies
+    JWT_COOKIE_SAMESITE = 'None' # Set the SameSite attribute for cookies
 
 # Production configuration class
 class Production(Config):    

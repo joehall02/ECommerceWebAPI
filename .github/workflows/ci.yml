@@ -1,0 +1,67 @@
+name: Backend Tests (Flask + Pytest + PostgreSQL)
+
+# Only run on main and staging branches for push and pull request events
+on:
+  push:
+    branches: [main, staging]
+  pull_request:
+    branches: [main, staging]
+  workflow_dispatch: # Allow manual trigger in GitHub UI
+
+# Defines the jobs to run in the workflow
+jobs:
+  test:
+    # Runs on the latest version of Ubuntu
+    runs-on: ubuntu-latest
+
+    # Spins up a PostgreSQL container for testing
+    services:
+      postgres:
+        image: postgres:15
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_DB: testdb
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    # Set up the environment variables for the Flask app
+    env:
+      TEST_DATABASE_URI: postgres://testuser:testpassword@localhost:5432/testdb
+      SECRET_KEY: dummysecret
+      SECURITY_SALT: dummysalt
+      REDIS_URL: memory://
+
+    # Define the steps to run in the job
+    steps:
+      # Checkout the code, this is necessary to access the repository files
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Set up Python 3.12
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Install dependencies
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # Wait for PostgreSQL to be ready
+      - name: Wait for Postgres to be ready
+        run: |
+          echo "Waiting for Postgres to be ready..."
+          sleep 10
+
+      # Run the tests
+      - name: Run Pytest
+        run: |
+          pytest tests -p no:warnings
