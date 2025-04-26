@@ -32,7 +32,7 @@ jobs:
 
     # Set up the environment variables for the Flask app
     env:
-      TEST_DATABASE_URI: postgres://testuser:testpassword@localhost:5432/testdb
+      TEST_DATABASE_URI: postgresql://testuser:testpassword@localhost:5432/testdb
       SECRET_KEY: dummysecret
       SECURITY_SALT: dummysalt
       REDIS_URL: memory://
