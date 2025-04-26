@@ -59,7 +59,10 @@ jobs:
       - name: Wait for Postgres to be ready
         run: |
           echo "Waiting for Postgres to be ready..."
-          sleep 10
+          until pg_isready -h localhost -U testuser; do
+          echo "Waiting for PostgreSQL to be ready..."
+          sleep 2
+          done
 
       # Run the tests
       - name: Run Pytest
