@@ -42,6 +42,10 @@ class UserService:
         # Default role is customer
         role = "customer"
 
+        # If there are no users, set the role to admin
+        if user_count == 0:
+            role = 'admin'
+
         # Check if the role is provided and is valid, only allow the first user to be an admin
         if 'role' in valid_data and valid_data['role']:
             if valid_data['role'] == 'admin':
@@ -71,7 +75,7 @@ class UserService:
         new_cart.save()
 
         # Send verification email
-        verification_link = f"{current_app.config['FRONTEND_URL']}/login/{new_user.verification_token}"
+        verification_link = f"{current_app.config['FRONTEND_PUBLIC_URL']}/login/{new_user.verification_token}"
         email_data = {
             'to_name': new_user.full_name,
             'to_email': new_user.email,
@@ -83,7 +87,12 @@ class UserService:
         cache.delete_memoized(UserService.get_all_admin_users)
         cache.delete_memoized(UserService.get_dashboard_data)
         
-        send_email(email_data)
+        # Send the verification email
+        try:
+            send_email(email_data)
+        except Exception as e:
+            new_user.delete() # Delete the user if the email fails to send
+            raise ValidationError('Failed to send verification email. Please try again later.')
 
         new_user.last_verification_email_sent = datetime.now()
         new_user.save()
@@ -155,7 +164,7 @@ class UserService:
         user.save()
 
         # Send verification email
-        verification_link = f"{current_app.config['FRONTEND_URL']}/login/{user.verification_token}"
+        verification_link = f"{current_app.config['FRONTEND_PUBLIC_URL']}/login/{user.verification_token}"
         email_data = {
             'to_name': user.full_name,
             'to_email': user.email,
@@ -301,7 +310,7 @@ class UserService:
         user.save()
 
         # Send verification email
-        reset_password_link = f"{current_app.config['FRONTEND_URL']}/reset-password/{user.verification_token}"
+        reset_password_link = f"{current_app.config['FRONTEND_PUBLIC_URL']}/reset-password/{user.verification_token}"
         email_data = {
             'to_name': user.full_name,
             'to_email': user.email,
@@ -309,7 +318,10 @@ class UserService:
             'text': f'Click the link to reset your password: {reset_password_link}'
         }
 
-        send_email(email_data)
+        try:
+            send_email(email_data)
+        except Exception as e:
+            raise ValidationError('Failed to send reset password email. Please try again later.')
 
         user.last_verification_email_sent = datetime.now()
         user.save()

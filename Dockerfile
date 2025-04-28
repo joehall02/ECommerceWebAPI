@@ -14,6 +14,13 @@ COPY . .
 # Expose the port
 EXPOSE 5050
 
+# Copy entrypoint script
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Use the entrypoint script
+ENTRYPOINT ["/entrypoint.sh"]
+
 # Run the application using Gunicorn
-CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5050", "run:app"]
+# CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5050", "run:app"]
 # CMD ["python3", "run.py"]

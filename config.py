@@ -8,7 +8,8 @@ load_dotenv() # Load environment variables from the .env file
 class Config:
     SECRET_KEY = os.getenv('SECRET_KEY') # Get the secret key from the environment variables
     SECURITY_SALT = os.getenv('SECURITY_SALT') # Get the security salt from the environment variables
-    FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:3000') # Get the frontend URL from the environment variables
+    FRONTEND_ORIGIN_URL = os.getenv('FRONTEND_ORIGIN_URL', 'http://localhost:3000') # Get the frontend origin URL from the environment variables
+    FRONTEND_PUBLIC_URL = os.getenv('FRONTEND_PUBLIC_URL', 'http://localhost:3000') # Get the frontend public URL from the environment variables
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=30) # Set the access token expiry time
     JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=7) # Set the refresh token expiry time
     JWT_REFRESH_TOKEN_REMEMBER_ME_EXPIRES = timedelta(days=30) # Set the remember me refresh token expiry time

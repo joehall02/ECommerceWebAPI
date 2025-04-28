@@ -32,7 +32,7 @@ def create_app(config):
     stripe.webhook_secret = app.config['STRIPE_WEBHOOK_SECRET']
 
     # Enable CORS
-    CORS(app, supports_credentials=True, origins=[app.config['FRONTEND_URL']]) 
+    CORS(app, supports_credentials=True, origins=[app.config['FRONTEND_ORIGIN_URL']]) 
 
     # Initialise the JWT manager
     jwt = JWTManager(app)

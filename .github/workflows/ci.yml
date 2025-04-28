@@ -24,6 +24,7 @@ jobs:
           POSTGRES_USER: testuser
           POSTGRES_PASSWORD: testpassword
           POSTGRES_DB: testdb
+        # These options are used to check the health of the PostgreSQL service
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
