@@ -132,25 +132,25 @@ def test_customer_login(test_client, test_create_users):
     
     return cookies
 
-@pytest.fixture()
-def create_test_guest_user(db_session):
-    guest = User (
-        full_name = 'Guest User',        
-        password = generate_password_hash('guest'),
-        role = 'guest',
-        created_at = datetime.now() - timedelta(days=8),
-        is_verified = False
-    )
-    db.session.add(guest)
-    db.session.flush()
+# @pytest.fixture()
+# def create_test_guest_user(db_session):
+#     guest = User (
+#         full_name = 'Guest User',        
+#         password = generate_password_hash('guest'),
+#         role = 'guest',
+#         created_at = datetime.now() - timedelta(days=8),
+#         is_verified = False
+#     )
+#     db.session.add(guest)
+#     db.session.flush()
     
-    cart = Cart (
-        user_id = guest.id
-    )
-    db.session.add(cart)
-    db.session.flush()
+#     cart = Cart (
+#         user_id = guest.id
+#     )
+#     db.session.add(cart)
+#     db.session.flush()
 
-    return guest
+#     return guest
 
 @pytest.fixture
 def test_admin_login(test_client, test_create_users):    

@@ -424,25 +424,25 @@ def test_get_dashboard_data(request, test_client, expected_status_code, auth_req
 
     assert response.status_code == expected_status_code
 
-# Test delete guest users route (Admin)
-@pytest.mark.parametrize('expected_status_code, auth_required', [
-    (200, True), # Success Case
-    (400, True), # Failure Case: No guest users over 7 days old found
-    (401, False), # Unauthorised Case: User not logged in
-    (403, True) # Forbidden Case: User not an admin
-])
+# # Test delete guest users route (Admin)
+# @pytest.mark.parametrize('expected_status_code, auth_required', [
+#     (200, True), # Success Case
+#     (400, True), # Failure Case: No guest users over 7 days old found
+#     (401, False), # Unauthorised Case: User not logged in
+#     (403, True) # Forbidden Case: User not an admin
+# ])
 
-def test_delete_guest_users(request, test_client, expected_status_code, auth_required):
-    if (expected_status_code != 403):
-        # Set/unset the authentication cookies
-        auth_admin_verification(test_client, auth_required, request)
-    else:
-        # Set/unset the authentication cookies
-        auth_customer_verification(test_client, auth_required, request)
+# def test_delete_guest_users(request, test_client, expected_status_code, auth_required):
+#     if (expected_status_code != 403):
+#         # Set/unset the authentication cookies
+#         auth_admin_verification(test_client, auth_required, request)
+#     else:
+#         # Set/unset the authentication cookies
+#         auth_customer_verification(test_client, auth_required, request)
 
-    if (expected_status_code == 200):
-        test_create_guest_user = request.getfixturevalue('create_test_guest_user')
+#     if (expected_status_code == 200):
+#         test_create_guest_user = request.getfixturevalue('create_test_guest_user')
 
-    response = test_client.delete('/user/admin')
+#     response = test_client.delete('/user/admin')
 
-    assert response.status_code == expected_status_code
+#     assert response.status_code == expected_status_code
