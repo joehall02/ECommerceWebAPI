@@ -79,6 +79,7 @@ class Product(db.Model):
     description = db.Column(db.String(1000), nullable=False)
     price = db.Column(db.DECIMAL(10, 2), nullable=False)
     stock = db.Column(db.Integer, nullable=False)
+    reserved_stock = db.Column(db.Integer, nullable=False, default=0) # Reserved stock is the stock that is reserved in the cart but not yet purchased
     stripe_product_id = db.Column(db.String(50), nullable=True) # Stripe product id
     stripe_price_id = db.Column(db.String(50), nullable=True) # Stripe price id
 
@@ -104,6 +105,9 @@ class Product(db.Model):
 class Cart(db.Model):
     __tablename__ = 'Cart'
     id = db.Column(db.Integer, primary_key=True)
+    locked = db.Column(db.Boolean, nullable=False, default=False) # Indicates if the cart is locked
+    locked_at = db.Column(db.DateTime, nullable=True) # Date and time when the cart was locked
+    product_added_at = db.Column(db.DateTime, nullable=True) # Date and time when the item was added to the cart
 
     # Foreign key
     user_id = db.Column(db.Integer, db.ForeignKey('User.id', ondelete='CASCADE'), nullable=False) # ondelete='CASCADE' ensures that when a user is deleted, their cart is also deleted

@@ -51,13 +51,20 @@ class OrderService:
         if not cart_items:
             raise ValidationError('Cart is empty')
 
+        # Lock the cart
+        cart.locked = True
+        cart.locked_at = datetime.now()
+        cart.save()
+
         # Create line items for Stripe checkout session
         line_items = []
         for cart_item in cart_items:
             # Check the stock of the product
             if cart_item.product.stock < cart_item.quantity:
                 raise ValidationError(cart_item.product.name + ' only has ' + str(cart_item.product.stock) + ' left in stock')
-
+            elif cart_item.product.reserved_stock < cart_item.quantity:
+                raise ValidationError(cart_item.product.name + ' only has ' + str(cart_item.product.stock - cart_item.product.reserved_stock) + ' left in stock')
+            
             line_items.append({
                 'price': cart_item.product.stripe_price_id, # Stripe price id
                 'quantity': cart_item.quantity
@@ -126,6 +133,9 @@ class OrderService:
             product = Product.query.get(cart_item.product_id)
 
             product.stock -= new_order_item.quantity
+            # product.reserved_stock -= new_order_item.quantity
+            product.reserved_stock = max(product.reserved_stock - new_order_item.quantity, 0) # Ensure reserved stock doesn't go negative
+            product.save()
 
             # Update the total price of the order
             new_order.total_price += new_order_item.price * new_order_item.quantity
@@ -133,9 +143,14 @@ class OrderService:
         # Save the updated order
         new_order.save()
 
+        # Unlock the cart
+        cart.locked = False
+        cart.locked_at = None
+        cart.product_added_at = None
+        cart.save()
+
         # Clear the cache for the products
         cache.delete_memoized(ProductService.get_all_products) 
-        cache.delete_memoized(ProductService.get_product)
         cache.delete_memoized(ProductService.get_all_admin_products)
         cache.delete_memoized(FeaturedProductService.get_all_featured_products)
         cache.delete_memoized(UserService.get_dashboard_data)

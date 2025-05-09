@@ -1,9 +1,12 @@
+from datetime import datetime
 from flask import jsonify, make_response
 from marshmallow import ValidationError
 from models import Cart, CartProduct, Product
 from flask_jwt_extended import get_jwt_identity, set_access_cookies, set_refresh_cookies
 from schemas import CartSchema, CartProductSchema, ProductSchema, ProductCartProductCombinedSchema
+from services.product_service import ProductService
 from services.user_service import UserService
+from exts import cache
 
 # Define the schema instances
 cart_schema = CartSchema()
@@ -27,7 +30,8 @@ class CartService:
         if not cart:
             raise ValidationError('Cart not found')
         
-        cart_products = cart.cart_products
+        # cart_products = cart.cart_products
+        cart_products = CartProduct.query.filter_by(cart_id=cart.id).order_by(CartProduct.id.desc()).all()
 
         cart_products_and_products = []
 
@@ -70,11 +74,33 @@ class CartService:
         # Check if the cart product exists
         if not cart_product:
             raise ValidationError('Cart product not found')
+
+        # Reserve the stock for the product
+        product = Product.query.get(cart_product.product_id)
+
+        # Check if the product exists
+        if not product:
+            raise ValidationError('Product not found')
+
+        # if product.stock < valid_data['quantity'] or product.reserved_stock < valid_data['quantity']:
+        #     raise ValidationError('Product is out of stock')
         
+        # Calculate the difference in quantity
+        quantity_difference = valid_data['quantity'] - cart_product.quantity
+
+        if product.stock < quantity_difference + product.reserved_stock:
+            raise ValidationError('Product is out of stock.')
+        
+        # Reserve the stock for the product
+        product.reserved_stock += quantity_difference
+        product.save()
+
         # Update the cart product quantity
         cart_product.quantity = valid_data['quantity']
-
         cart_product.save()
+
+        # Clear the cache
+        cache.delete_memoized(ProductService.get_all_products)
 
         return cart_product
 
@@ -121,9 +147,28 @@ class CartService:
         # If the cart product already exists, change the quantity to the new quantity
         existing_cart_product = CartProduct.query.filter_by(cart_id=cart.id, product_id=product_id).first()
         if existing_cart_product:
+            # Calculate the difference in quantity
+            quantity_difference = valid_data['quantity'] - existing_cart_product.quantity
+
+            # Adjust the reserved stock
+            if product.stock < quantity_difference + product.reserved_stock:
+                raise ValidationError('Product is out of stock.')
+            
+            # Reserve the stock for the product
+            product.reserved_stock += quantity_difference
+            product.save()
+
+            # Update the cart product quantity
             existing_cart_product.quantity = valid_data['quantity']
             existing_cart_product.save()
             return cart_product_schema.dump(existing_cart_product)
+
+        # Reserve the stock for the product
+        if product.stock < valid_data['quantity'] + product.reserved_stock:
+            raise ValidationError('Product is out of stock.')
+        
+        product.reserved_stock += valid_data['quantity']
+        product.save()
 
         # Otherwise create a new cart product if it doesn't exist already
         cart_product = CartProduct(
@@ -137,6 +182,10 @@ class CartService:
         # Serialise the cart product
         cart_product_data = cart_product_schema.dump(cart_product)
 
+        # Add timestamp of when cart product was added
+        cart.product_added_at = datetime.now()
+        cart.save()
+
         # Create a response
         response = make_response(jsonify(cart_product_data))
 
@@ -147,6 +196,9 @@ class CartService:
 
             print(guest_response.json['access_token'])
             print(guest_response.json['refresh_token'])
+
+        # Clear the cache
+        cache.delete_memoized(ProductService.get_all_products)
 
         return response
     
@@ -162,7 +214,17 @@ class CartService:
         if not cart_product:
             raise ValidationError('Cart product not found')
         
+        # Restore the stock for the product
+        product = Product.query.get(cart_product.product_id)
+        if product:
+            # product.reserved_stock -= cart_product.quantity
+            product.reserved_stock = max(product.reserved_stock - cart_product.quantity, 0) # Ensure stock doesn't go negative
+            product.save()
+        
         # If the cart product has a quantity of 1, delete the cart product
         cart_product.delete()
+
+        # Clear the cache
+        cache.delete_memoized(ProductService.get_all_products)
 
         return cart_product

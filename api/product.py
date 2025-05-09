@@ -15,6 +15,7 @@ product_model = product_ns.model('Product', {
     'description': fields.String(required=True),
     'price': fields.Float(required=True),
     'stock': fields.Integer(required=True),
+    'reserved_stock': fields.Integer(required=True),
     'category_id': fields.Integer(required=True),
 })
 
@@ -31,6 +32,7 @@ product_admin_model = product_ns.model('ProductAdmin', {
     'name': fields.String(required=True),
     'price': fields.Float(required=True),
     'stock': fields.Integer(required=True),
+    'reserved_stock': fields.Integer(required=True),
 })
 
 featured_product_model = product_ns.model('FeaturedProduct', {

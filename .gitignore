@@ -17,3 +17,6 @@ services/__pycache__/
 
 # ignore virtual environment
 venv/
+
+# Ignore celery beat schedule file
+celerybeat-schedule.db

@@ -19,6 +19,7 @@ class ProductSchema(Schema):
     description = ma_fields.String(required=True, error_messages={'required': 'Product description is required', 'null': 'Product description cannot be empty'})
     price = ma_fields.Decimal(required=True, error_messages={'required': 'Product price is required', 'null': 'Product price cannot be empty'})
     stock = ma_fields.Integer(required=True, error_messages={'required': 'Product stock is required', 'null': 'Product stock cannot be empty'})
+    reserved_stock = ma_fields.Integer(required=False, error_messages={'required': 'Reserved stock is required', 'null': 'Reserved stock cannot be empty'})
     category_id = ma_fields.Integer(required=True, error_messages={'required': 'Category ID is required', 'null': 'Category ID cannot be empty'})
 
 class ProductShopSchema(Schema):
@@ -34,6 +35,7 @@ class ProductAdminSchema(Schema):
     name = ma_fields.String(required=True, error_messages={'required': 'Product name is required', 'null': 'Product name cannot be empty'})
     price = ma_fields.Decimal(required=True, error_messages={'required': 'Product price is required', 'null': 'Product price cannot be empty'})
     stock = ma_fields.Integer(required=True, error_messages={'required': 'Product stock is required', 'null': 'Product stock cannot be empty'})
+    reserved_stock = ma_fields.Integer(required=True, error_messages={'required': 'Reserved stock is required', 'null': 'Reserved stock cannot be empty'})
 
 class FeaturedProductSchema(Schema):
     id = ma_fields.Integer(required=False, error_messages={'required': 'Featured product ID is required', 'null': 'Featured product ID cannot be empty'})

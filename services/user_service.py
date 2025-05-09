@@ -1,12 +1,13 @@
 from datetime import datetime, timedelta
 from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity, set_access_cookies, set_refresh_cookies
 from sqlalchemy import extract
-from models import User, Cart, Order
+from models import Product, User, Cart, Order
 from flask import current_app, make_response, jsonify
 from marshmallow import ValidationError
 from schemas import SignupSchema, LoginSchema, UserSchema, UserAdminSchema
 from werkzeug.security import generate_password_hash, check_password_hash
 from exts import db, cache
+from services.product_service import ProductService
 from services.utils import send_email, generate_verification_token, verify_token, send_contact_us_email
 
 # Define the schema instances
@@ -411,11 +412,25 @@ class UserService:
                 if order.status != 'Delivered':
                     raise ValidationError('Cannot delete account with pending orders')
         
+        # Check if the user has cart items, if so, remove the reserved stock
+        cart = Cart.query.filter_by(user_id=user.id).first()
+        if cart:
+            cart_products = cart.cart_products
+
+            if cart_products:
+                for cart_product in cart_products:
+                    product = Product.query.get(cart_product.product_id)
+                    if product:
+                        # product.reserved_stock -= cart_product.quantity
+                        product.reserved_stock = max(product.reserved_stock - cart_product.quantity, 0) # Ensure stock doesn't go negative
+                        product.save()
+
         user.delete()
 
         # Clear the cache
         cache.delete_memoized(UserService.get_all_admin_users)
         cache.delete_memoized(UserService.get_dashboard_data)
+        cache.delete_memoized(ProductService.get_all_products)
 
         return user
         
@@ -511,27 +526,40 @@ class UserService:
             'graph_data': orders_per_month_data
         }
     
-    @staticmethod
-    def delete_old_guest_users():
-        expiration_date = datetime.now() - timedelta(days=7)
+    # @staticmethod
+    # def delete_old_guest_users():
+    #     expiration_date = datetime.now() - timedelta(days=7)
         
-        print("Deleting guest users")
+    #     print("Deleting guest users")
 
-        # Get all guest users that are older than expiration date
-        guest_users = User.query.filter(User.role == 'guest', User.created_at < expiration_date).all()
+    #     # Get all guest users that are older than expiration date
+    #     guest_users = User.query.filter(User.role == 'guest', User.created_at < expiration_date).all()
 
-        if not guest_users:
-            raise ValidationError('No guest users, older than 7 days old, found')
+    #     if not guest_users:
+    #         raise ValidationError('No guest users, older than 7 days old, found')
 
-        for guest_user in guest_users:
-            guest_user.delete()
+    #     for guest_user in guest_users:
+    #         # Check if the guest user has any cart items, if so, remove the reserved stock
+    #         cart = Cart.query.filter_by(user_id=guest_user.id).first()
+    #         if cart:                
+    #             cart_products = cart.cart_products
 
-        # Clear the cache if any guest users were deleted
-        if (guest_users != []):
-            cache.delete_memoized(UserService.get_all_admin_users)
-            cache.delete_memoized(UserService.get_dashboard_data)           
+    #             if cart_products:
+    #                 for cart_product in cart_products:
+    #                     product = Product.query.get(cart_product.product_id)
+    #                     if product:
+    #                         # product.reserved_stock -= cart_product.quantity
+    #                         product.reserved_stock = max(product.reserved_stock - cart_product.quantity, 0) # Ensure stock doesn't go negative
+    #                         product.save()
 
-        return {'message': 'Old guest users deleted'}
+    #         guest_user.delete()
+
+    #     # Clear the cache
+    #     cache.delete_memoized(UserService.get_all_admin_users)
+    #     cache.delete_memoized(UserService.get_dashboard_data)           
+    #     cache.delete_memoized(ProductService.get_all_products)
+
+    #     return {'message': 'Old guest users deleted'}
         
         
     @staticmethod

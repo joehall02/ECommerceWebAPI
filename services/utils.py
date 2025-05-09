@@ -41,6 +41,7 @@ def upload_image_to_google_cloud_storage(image_file):
 
         return image_path
     except Exception as e:
+        print(f"Error uploading image to Google Cloud Storage: {str(e)}")
         raise ValidationError(f'Error uploading image to Google Cloud Storage: {str(e)}')
 
 # Remove an image file from Google Cloud Storage
@@ -68,6 +69,7 @@ def remove_image_from_google_cloud_storage(image_path):
         # Delete the image file from Google Cloud Storage
         blob.delete()
     except Exception as e:
+        print(f"Error removing image from Google Cloud Storage: {str(e)}")
         raise ValidationError(f'Error removing image from Google Cloud Storage: {str(e)}')
 
 def send_email(data):
@@ -121,7 +123,7 @@ def send_contact_us_email(data):
         
         return response.json()
     except Exception as e:
-        print(f"Error sending email: {str(e)}")
+        print(f"Error sending contact email: {str(e)}")
         raise ValidationError(f"Error sending email")
 
 # Generate a verification token using the email as the unique identifier
@@ -185,6 +187,7 @@ def update_stripe_product_and_price(product, valid_data):
                 name=valid_data['name']                    
             )
         except Exception as e:
+            print(f"Failed to update product name in Stripe: {str(e)}")
             raise ValidationError(f"Failed to update product name in Stripe: {str(e)}")
 
     # Check if description is provided, if so, update the stripe product
@@ -195,6 +198,7 @@ def update_stripe_product_and_price(product, valid_data):
                 description=valid_data['description']                    
             )
         except Exception as e:
+            print(f"Failed to update product description in Stripe: {str(e)}")
             raise ValidationError(f"Failed to update product description in Stripe: {str(e)}")
 
     # Check if price is provided, if so, update the stripe price
@@ -217,6 +221,7 @@ def update_stripe_product_and_price(product, valid_data):
             product.stripe_price_id = stripe_price.id
 
         except Exception as e:
+            print(f"Failed to update price in Stripe: {str(e)}")
             raise ValidationError(f"Failed to update price in Stripe: {str(e)}")
         
 # Upload image to stripe product
@@ -227,6 +232,9 @@ def upload_image_to_stripe_product(product, image_path):
             images=["https://storage.googleapis.com/" + image_path]
         )
     except Exception as e:
+        print(f"Failed to upload image to Stripe product: {str(e)}")
+        # Remove the image from Google Cloud Storage if the upload fails
+        remove_image_from_google_cloud_storage(image_path)
         raise ValidationError(f"Failed to upload image to Stripe product: {str(e)}")
     
 # Create a stripe checkout session
@@ -265,10 +273,10 @@ def stripe_webhook_handler(payload, sig_header):
         )
     except ValueError as e:
         # Invalid payload
-        return {'error': str(e)}, 400
+        return {'An unexpected error with Stripe occured, please try again later.'}, 400
     except stripe.error.SignatureVerificationError as e:
         # Invalid signature
-        return {'error': str(e)}, 400
+        return {'An error occured with Stripe, please try again later.': str(e)}, 400
     
     # Handle the event
     if event['type'] == 'checkout.session.completed':
@@ -306,5 +314,19 @@ def stripe_webhook_handler(payload, sig_header):
             user.save()
 
         return data
+    # # If the session is not completed
+    # elif event['type'] == 'checkout.session.':
+    #     session = event['data']['object']
+    #     metadata = session['metadata']
+
+    #     # Unlock the cart
+    #     user_id = metadata['user_id']
+    #     user = User.query.get(user_id)
+    #     if user:
+    #         user.cart.locked = False
+    #         user.cart.locked_at = None
+    #         user.cart.save()
+
+    #     return {'message': 'Payment failed'}, 400
 
     return None # Return None if the event type is not recognised

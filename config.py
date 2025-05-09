@@ -25,6 +25,8 @@ class Config:
     CONTACT_US_EMAIL = os.getenv('CONTACT_US_EMAIL') # Get the contact us email from the environment variables
     CACHE_TYPE = 'RedisCache' # Set the cache type to Redis
     CACHE_REDIS_URL = os.getenv('REDIS_URL') # Get the Redis URL from the environment variables
+    CELERY_BROKER_URL = os.getenv('REDIS_URL') # Get the Celery broker URL from the environment variables
+    CELERY_RESULT_BACKEND = os.getenv('REDIS_URL') # Get the Celery result backend URL from the environment variables
     GOOGLE_CLOUD_STORAGE_BUCKET_NAME = os.getenv('GOOGLE_CLOUD_STORAGE_BUCKET_NAME') # Get the Google Cloud Storage bucket name from the environment variables
 
 # Development configuration class
