@@ -7,11 +7,11 @@ class User(db.Model):
     email = db.Column(db.String(100), nullable=True, unique=True) # unique=True ensures that no two users can have the same email, nullable=True allows for NULL values for guest users
     password = db.Column(db.String(300), nullable=False)    
     stripe_customer_id = db.Column(db.String(50), nullable=True)
-    created_at = db.Column(db.DateTime, nullable=False)
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False)
     role = db.Column(db.String(50), nullable=False)
     is_verified = db.Column(db.Boolean, nullable=False, default=False)
     verification_token = db.Column(db.String(100), nullable=True)
-    last_verification_email_sent = db.Column(db.DateTime, nullable=True)
+    last_verification_email_sent = db.Column(db.DateTime(timezone=True), nullable=True)
 
     # Relationships
     addresses = db.relationship('Address', backref='user', lazy=True, cascade="all, delete", passive_deletes=True) # cascade="all, delete" ensures that when a user is deleted, all addresses are also deleted and passive_deletes=True ensures that the database handles the deletion of the addresses
@@ -106,8 +106,8 @@ class Cart(db.Model):
     __tablename__ = 'Cart'
     id = db.Column(db.Integer, primary_key=True)
     locked = db.Column(db.Boolean, nullable=False, default=False) # Indicates if the cart is locked
-    locked_at = db.Column(db.DateTime, nullable=True) # Date and time when the cart was locked
-    product_added_at = db.Column(db.DateTime, nullable=True) # Date and time when the item was added to the cart
+    locked_at = db.Column(db.DateTime(timezone=True), nullable=True) # Date and time when the cart was locked
+    product_added_at = db.Column(db.DateTime(timezone=True), nullable=True) # Date and time when the item was added to the cart
 
     # Foreign key
     user_id = db.Column(db.Integer, db.ForeignKey('User.id', ondelete='CASCADE'), nullable=False) # ondelete='CASCADE' ensures that when a user is deleted, their cart is also deleted
@@ -187,7 +187,7 @@ class FeaturedProduct(db.Model):
 class Order(db.Model):
     __tablename__ = 'Order'
     id = db.Column(db.Integer, primary_key=True)
-    order_date = db.Column(db.DateTime, nullable=False)
+    order_date = db.Column(db.DateTime(timezone=True), nullable=False)
     total_price = db.Column(db.DECIMAL(10, 2), nullable=False)
     status = db.Column(db.String(50), nullable=False)
     full_name = db.Column(db.String(100), nullable=False)

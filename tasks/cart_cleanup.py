@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 from models import db, Cart, CartProduct, Product
 from main import create_app
 from celery_worker import celery
@@ -37,7 +38,7 @@ def cleanup_abandoned_carts():
 
     try:
         with app.app_context():
-            now = datetime.now()
+            now = datetime.now(tz=ZoneInfo("UTC"))
             carts = Cart.query.all()
 
             for cart in carts:

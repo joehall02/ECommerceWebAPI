@@ -1,4 +1,5 @@
-from datetime import datetime, timedelta
+from datetime import datetime
+from zoneinfo import ZoneInfo
 from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity, set_access_cookies, set_refresh_cookies
 from sqlalchemy import extract
 from models import Product, User, Cart, Order
@@ -8,7 +9,9 @@ from schemas import SignupSchema, LoginSchema, UserSchema, UserAdminSchema
 from werkzeug.security import generate_password_hash, check_password_hash
 from exts import db, cache
 from services.product_service import ProductService
-from services.utils import send_email, generate_verification_token, verify_token, send_contact_us_email
+from services.utils import send_email, generate_verification_token, verify_token, send_contact_us_email, convert_utc_to_uk_time
+from dateutil.parser import parse
+
 
 # Define the schema instances
 signup_schema = SignupSchema()
@@ -63,7 +66,7 @@ class UserService:
             password=generate_password_hash(valid_data['password']), # Generate a password hash before storing it
             email=valid_data['email'],
             role=role,
-            created_at=datetime.now(),
+            created_at=datetime.now(tz=ZoneInfo("UTC")),
             is_verified=False,
             verification_token=generate_verification_token(valid_data['email'])
         )
@@ -95,7 +98,7 @@ class UserService:
             new_user.delete() # Delete the user if the email fails to send
             raise ValidationError('Failed to send verification email. Please try again later.')
 
-        new_user.last_verification_email_sent = datetime.now()
+        new_user.last_verification_email_sent = datetime.now(tz=ZoneInfo("UTC"))
         new_user.save()
 
 
@@ -157,7 +160,7 @@ class UserService:
             raise ValidationError('Email already verified')
         
         # Check if the user has requested a resend recently (less than 60 seconds)
-        if user.last_verification_email_sent and (datetime.now() - user.last_verification_email_sent).seconds < 60:
+        if user.last_verification_email_sent and (datetime.now(tz=ZoneInfo("UTC")) - user.last_verification_email_sent).seconds < 60:
             raise ValidationError('Please wait before requesting another verification email')
 
         # Generate a new verification token
@@ -175,7 +178,7 @@ class UserService:
 
         send_email(email_data)
 
-        user.last_verification_email_sent = datetime.now()
+        user.last_verification_email_sent = datetime.now(tz=ZoneInfo("UTC"))
         user.save()
 
         return user
@@ -187,7 +190,7 @@ class UserService:
             full_name='Guest User',
             password=generate_password_hash('guest'), # Generate a password hash before storing it
             role='guest',
-            created_at=datetime.now()
+            created_at=datetime.now(tz=ZoneInfo("UTC"))
         )
         new_user.save()
 
@@ -303,7 +306,7 @@ class UserService:
             raise ValidationError('User not found')
 
         # Check if the user has requested a reset password email recently (less than 60 seconds)
-        if user.last_verification_email_sent and (datetime.now() - user.last_verification_email_sent).seconds < 60:
+        if user.last_verification_email_sent and (datetime.now(tz=ZoneInfo("UTC")) - user.last_verification_email_sent).seconds < 60:
             raise ValidationError('Please wait before requesting another reset password email')
         
         # Generate a new verification token 
@@ -324,7 +327,7 @@ class UserService:
         except Exception as e:
             raise ValidationError('Failed to send reset password email. Please try again later.')
 
-        user.last_verification_email_sent = datetime.now()
+        user.last_verification_email_sent = datetime.now(tz=ZoneInfo("UTC"))
         user.save()
 
         return user
@@ -502,7 +505,7 @@ class UserService:
         total_revenue = round(total_revenue, 2) # Round the total revenue to 2 decimal places
 
         # Get the number of orders per month for the current year
-        current_year = datetime.now().year
+        current_year = datetime.now(tz=ZoneInfo("UTC")).year
         orders_per_month = (
             db.session.query(
                 extract('month', Order.order_date).label('month'),
@@ -528,7 +531,7 @@ class UserService:
     
     # @staticmethod
     # def delete_old_guest_users():
-    #     expiration_date = datetime.now() - timedelta(days=7)
+    #     expiration_date = datetime.now(tz=ZoneInfo("UTC")) - timedelta(days=7)
         
     #     print("Deleting guest users")
 
@@ -596,9 +599,13 @@ class UserService:
         # Check if the user exists
         if not user:
             raise ValidationError('User not found')
-        
+                
         # Serialise the user
         user = user_schema.dump(user)
+
+        if user['created_at']:
+            # Convert utc datetime to local datetime
+            user['created_at'] = convert_utc_to_uk_time(parse(user['created_at'])).isoformat()   
 
         return user
     

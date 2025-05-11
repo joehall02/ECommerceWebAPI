@@ -1,4 +1,5 @@
 import uuid
+from zoneinfo import ZoneInfo
 from flask import current_app
 from marshmallow import ValidationError
 from google.cloud import storage
@@ -330,3 +331,9 @@ def stripe_webhook_handler(payload, sig_header):
     #     return {'message': 'Payment failed'}, 400
 
     return None # Return None if the event type is not recognised
+
+# Convert utc time to local time
+def convert_utc_to_uk_time(utc_time):
+    # Convert the UTC time to GMT
+    gmt_time = utc_time.astimezone(ZoneInfo('Europe/London'))
+    return gmt_time

@@ -1,14 +1,16 @@
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from marshmallow import ValidationError
 from models import Order, OrderItem, Cart, ProductImage, Product, User
 from flask_jwt_extended import get_jwt_identity
 from schemas import OrderSchema, OrderItemSchema, OrderItemCombinedSchema, OrderAdminSchema, OrderItemCombinedAdminSchema
 import stripe
 from flask import current_app
-from services.utils import send_email, create_stripe_checkout_session
+from services.utils import send_email, create_stripe_checkout_session, convert_utc_to_uk_time
 from services.product_service import ProductService, FeaturedProductService
 from services.user_service import UserService
 from exts import cache
+from dateutil.parser import parse
 
 # Define the schema instances
 order_schema = OrderSchema()
@@ -53,7 +55,7 @@ class OrderService:
 
         # Lock the cart
         cart.locked = True
-        cart.locked_at = datetime.now()
+        cart.locked_at = datetime.now(tz=ZoneInfo("UTC"))
         cart.save()
 
         # Create line items for Stripe checkout session
@@ -102,7 +104,7 @@ class OrderService:
 
         # Create a new order
         new_order = Order(
-            order_date = datetime.now(), # Get the current date in the format YYYY-MM-DD
+            order_date = datetime.now(tz=ZoneInfo("UTC")), # Get the current date in the format YYYY-MM-DD
             total_price = 0,
             status = 'Processing', # Default status
             full_name = valid_data['full_name'],
@@ -199,6 +201,11 @@ class OrderService:
         
         # Serialize the data
         orders = order_item_combined_schema.dump(entire_order, many=True)
+
+        # Convert the order date to UK time
+        for order in orders:
+            if order['order']['order_date']:
+                order["order"]["order_date"] = convert_utc_to_uk_time(parse(order['order']['order_date'])).isoformat()
     
         return {
             'orders': orders,
@@ -244,6 +251,10 @@ class OrderService:
             # Serialize the data
             order = order_item_combined_admin_schema.dump(order)        
 
+            # Convert the order date to UK time
+            if order["order"]["order_date"]:
+                order["order"]["order_date"] = convert_utc_to_uk_time(parse(order["order"]["order_date"])).isoformat()
+
             # Return the order and order items
             return order
         else:
@@ -253,7 +264,11 @@ class OrderService:
             }
 
             # Serialize the data
-            order = order_item_combined_admin_schema.dump(order)        
+            order = order_item_combined_admin_schema.dump(order)
+
+            # Convert the order date to UK time
+            if order["order"]["order_date"]:
+                order["order"]["order_date"] = convert_utc_to_uk_time(parse(order["order"]["order_date"])).isoformat()
 
             # Return the order and order items
             return order       
@@ -283,6 +298,11 @@ class OrderService:
         # Serialize the data
         orders = order_admin_schema.dump(orders, many=True)
         
+        # Convert the order date to UK time
+        for order in orders:
+            if order['order_date']:
+                order["order_date"] = convert_utc_to_uk_time(parse(order['order_date'])).isoformat()
+
         return {
             'orders': orders,
             'total_pages': orders_query.pages,

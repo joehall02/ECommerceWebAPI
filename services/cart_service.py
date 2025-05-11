@@ -1,4 +1,5 @@
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from flask import jsonify, make_response
 from marshmallow import ValidationError
 from models import Cart, CartProduct, Product
@@ -183,7 +184,7 @@ class CartService:
         cart_product_data = cart_product_schema.dump(cart_product)
 
         # Add timestamp of when cart product was added
-        cart.product_added_at = datetime.now()
+        cart.product_added_at = datetime.now(tz=ZoneInfo("UTC"))
         cart.save()
 
         # Create a response

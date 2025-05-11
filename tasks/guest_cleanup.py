@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 from models import User, Cart, Product
 from main import create_app
 from celery_worker import celery
@@ -40,7 +41,7 @@ def cleanup_old_guest_users():
     
     try:
         with app.app_context():
-            now = datetime.now()
+            now = datetime.now(tz=ZoneInfo("UTC"))
             guests = User.query.filter_by(role='guest').all()
 
             for guest in guests:
@@ -60,10 +61,10 @@ def cleanup_old_guest_users():
                     guest.delete()
                     print(f"Deleted guest user {guest.id}")
             
-                    # Clear the cache
-                    cache.delete_memoized(UserService.get_all_admin_users)
-                    cache.delete_memoized(UserService.get_dashboard_data)           
-                    cache.delete_memoized(ProductService.get_all_products)
+            # Clear the cache
+            cache.delete_memoized(UserService.get_all_admin_users)
+            cache.delete_memoized(UserService.get_dashboard_data)           
+            cache.delete_memoized(ProductService.get_all_products)
 
     finally:
         # Release the lock

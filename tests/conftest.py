@@ -5,7 +5,8 @@ from main import create_app
 from config import Test
 from exts import db, limiter, cache
 from werkzeug.security import generate_password_hash
-from datetime import datetime, timedelta
+from datetime import datetime
+from zoneinfo import ZoneInfo
 from models import User, Cart
 from sqlalchemy.orm import scoped_session, sessionmaker
 
@@ -84,7 +85,7 @@ def test_create_users(db_session):
         email = 'admin@test.com',
         password = generate_password_hash('password123'),
         role = 'admin',
-        created_at = datetime.now(),
+        created_at = datetime.now(tz=ZoneInfo("UTC")),
         is_verified = True
     )
     db.session.add(admin)
@@ -102,7 +103,7 @@ def test_create_users(db_session):
         email = 'customer@test.com',
         password = generate_password_hash('password123'),
         role = 'customer',
-        created_at = datetime.now(),
+        created_at = datetime.now(tz=ZoneInfo("UTC")),
         is_verified = True
     )
     db.session.add(customer)
@@ -138,7 +139,7 @@ def test_customer_login(test_client, test_create_users):
 #         full_name = 'Guest User',        
 #         password = generate_password_hash('guest'),
 #         role = 'guest',
-#         created_at = datetime.now() - timedelta(days=8),
+#         created_at = datetime.now(tz=ZoneInfo("UTC")) - timedelta(days=8),
 #         is_verified = False
 #     )
 #     db.session.add(guest)
@@ -238,7 +239,7 @@ def create_unverified_user(db_session):
         email = 'customer@test.com',
         password = generate_password_hash('password123'),
         role = 'customer',
-        created_at = datetime.now(),
+        created_at = datetime.now(tz=ZoneInfo("UTC")),
         is_verified = False
     )
     db.session.add(user)

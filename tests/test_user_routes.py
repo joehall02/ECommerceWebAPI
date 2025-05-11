@@ -1,10 +1,5 @@
 import pytest
-from pytest_mock import mocker
 from tests.utils import auth_customer_verification, auth_admin_verification
-from models import User
-from datetime import datetime
-from werkzeug.security import generate_password_hash
-from exts import db
 
 # Fixtures
 
