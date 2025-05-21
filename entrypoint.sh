@@ -10,7 +10,7 @@ if [ "$1" == "backend" ]; then
     
     # Start the flask application
     echo "Starting Gunicorn..."
-    exec gunicorn -w 4 -b 0.0.0.0:5050 run:app
+    exec gunicorn -w $GUNICORN_WORKERS -b 0.0.0.0:${PORT:-5050} run:app
 
 elif [ "$1" == "celery" ]; then
     # Start the Celery worker

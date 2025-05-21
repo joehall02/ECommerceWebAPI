@@ -10,9 +10,6 @@ from exts import cache
 from services.user_service import UserService
 from services.product_service import ProductService
 
-# Redis setup for locking
-redis_client = redis.StrictRedis.from_url(os.getenv('REDIS_URL', 'redis://localhost:6379/0'))
-
 # Lock expiration
 LOCK_EXPIRATION = 60 * 30  # 30 minutes
 
@@ -27,12 +24,16 @@ elif flask_env == 'production':
 else:
     raise ValueError(f"Invalid FLASK_ENV value: {flask_env}. Expected 'development' or 'production'.")
 
+# Set redis client
+redis_client = redis.StrictRedis.from_url(config.CACHE_REDIS_URL)
 
+# Initialise app
 app = create_app(config)
 
 @celery.task(name="tasks.guest_cleanup.cleanup_old_guest_users")
 def cleanup_old_guest_users():
     lock_key = "lock:product_reserved_stock"
+    cache_needs_clearing = False
 
     # Try to acquire the lock
     if not redis_client.set(lock_key, "1", nx=True, ex=LOCK_EXPIRATION):
@@ -60,11 +61,13 @@ def cleanup_old_guest_users():
                     # Delete the guest user, also deleting the cart and cart products
                     guest.delete()
                     print(f"Deleted guest user {guest.id}")
+                    cache_needs_clearing = True
             
             # Clear the cache
-            cache.delete_memoized(UserService.get_all_admin_users)
-            cache.delete_memoized(UserService.get_dashboard_data)           
-            cache.delete_memoized(ProductService.get_all_products)
+            if cache_needs_clearing:
+                cache.delete_memoized(UserService.get_all_admin_users)
+                cache.delete_memoized(UserService.get_dashboard_data)           
+                cache.delete_memoized(ProductService.get_all_products)
 
     finally:
         # Release the lock

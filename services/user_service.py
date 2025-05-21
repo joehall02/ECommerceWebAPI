@@ -146,7 +146,10 @@ class UserService:
             raise ValidationError('No data provided')
 
         # Validate the request data against the login schema
-        valid_data = login_schema.load(data, partial=True)
+        try:
+            valid_data = login_schema.load(data, partial=True)
+        except ValidationError as e:
+            raise ValidationError('Invalid email provided')
 
         # Get the user with the provided email
         user = User.query.filter_by(email=valid_data['email']).first()

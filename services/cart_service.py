@@ -46,7 +46,7 @@ class CartService:
                     'id': product.id,
                     'name': product.name,
                     'price': product.price,
-                    'stock': product.stock,
+                    'stock': product.stock - product.reserved_stock,
                     'image_path': image_path,
                     'category_name': product.category.name
                 }

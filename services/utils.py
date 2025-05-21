@@ -1,10 +1,11 @@
+from datetime import datetime, timedelta
 import uuid
 from zoneinfo import ZoneInfo
 from flask import current_app
 from marshmallow import ValidationError
 from google.cloud import storage
 from itsdangerous import URLSafeTimedSerializer
-from models import User
+from models import Cart, User
 import requests
 import stripe
 
@@ -237,7 +238,13 @@ def upload_image_to_stripe_product(product, image_path):
         # Remove the image from Google Cloud Storage if the upload fails
         remove_image_from_google_cloud_storage(image_path)
         raise ValidationError(f"Failed to upload image to Stripe product: {str(e)}")
-    
+
+# Convert utc time to local time
+def convert_utc_to_uk_time(utc_time):
+    # Convert the UTC time to GMT
+    gmt_time = utc_time.astimezone(ZoneInfo('Europe/London'))
+    return gmt_time
+
 # Create a stripe checkout session
 def create_stripe_checkout_session(user, valid_data, line_items):
     try:
@@ -250,6 +257,7 @@ def create_stripe_checkout_session(user, valid_data, line_items):
             customer_email=user.email if not user.stripe_customer_id else None, # Attach the email to the session if the user doesn't have a stripe customer id
             customer=user.stripe_customer_id if user.stripe_customer_id else None, # Attach the customer to the session if one exists
             customer_creation='always' if not user.stripe_customer_id else None, # Create a new customer if one doesn't exist
+            expires_at=int((datetime.now(tz=ZoneInfo("UTC")) + timedelta(minutes=30)).timestamp()), # Set the session to expire in 30 minutes
 
             metadata={
                 'user_id': user.id,
@@ -279,61 +287,61 @@ def stripe_webhook_handler(payload, sig_header):
         # Invalid signature
         return {'An error occured with Stripe, please try again later.': str(e)}, 400
     
-    # Handle the event
-    if event['type'] == 'checkout.session.completed':
-        session = event['data']['object'] # Contains a stripe checkout session            
-        customer_email = session['customer_details']['email']
+    try:
+        # Handle the event
+        if event['type'] == 'checkout.session.completed':
+            session = event['data']['object'] # Contains a stripe checkout session            
+            customer_email = session['customer_details']['email']
 
-        # Extract the metadata, which contains the user id and address details
-        metadata = session['metadata']
-        user_id = metadata['user_id']
-        full_name = metadata['full_name']
-        address_line_1 = metadata['address_line_1']
-        address_line_2 = metadata['address_line_2']
-        city = metadata['city']
-        postcode = metadata['postcode']
+            # Extract the metadata, which contains the user id and address details
+            metadata = session['metadata']
+            user_id = metadata['user_id']
+            full_name = metadata['full_name']
+            address_line_1 = metadata['address_line_1']
+            address_line_2 = metadata['address_line_2']
+            city = metadata['city']
+            postcode = metadata['postcode']
 
-        
-        # Create a new order
-        data = {
-            'user_id': user_id,
-            'full_name': full_name,
-            'address_line_1': address_line_1,
-            'address_line_2': address_line_2,
-            'city': city,
-            'postcode': postcode,
-            'customer_email': customer_email
-        }
+            
+            # Create a new order
+            data = {
+                'user_id': user_id,
+                'full_name': full_name,
+                'address_line_1': address_line_1,
+                'address_line_2': address_line_2,
+                'city': city,
+                'postcode': postcode,
+                'customer_email': customer_email
+            }
 
-        # Extract the stripe customer id
-        stripe_customer_id = session['customer']
+            # Extract the stripe customer id
+            stripe_customer_id = session['customer']
 
-        user = User.query.get(user_id)
+            user = User.query.get(user_id)
 
-        if user:
-            user.stripe_customer_id = stripe_customer_id
-            user.save()
+            if user:
+                user.stripe_customer_id = stripe_customer_id
+                user.save()
 
-        return data
-    # # If the session is not completed
-    # elif event['type'] == 'checkout.session.':
-    #     session = event['data']['object']
-    #     metadata = session['metadata']
+            return data
+        # # If the session is not completed
+        elif event['type'] == 'checkout.session.expired':
+            session = event['data']['object']
+            metadata = session['metadata']
 
-    #     # Unlock the cart
-    #     user_id = metadata['user_id']
-    #     user = User.query.get(user_id)
-    #     if user:
-    #         user.cart.locked = False
-    #         user.cart.locked_at = None
-    #         user.cart.save()
+            # Unlock the cart
+            user_id = metadata['user_id']
+            user_cart = Cart.query.filter_by(user_id=user_id).first()
+            if user_cart:
+                user_cart.locked = False
+                user_cart.locked_at = None
+                user_cart.save()
+                print(f"Unlocked cart {user_cart.id}")
 
-    #     return {'message': 'Payment failed'}, 400
+            return {'message': 'Payment failed'}, 400
+    
+    except Exception as e:
+        print(f"Stipe webhook handler: {str(e)}")
+        return {'message': 'An error occured with Stripe, please try again later.'}, 400
 
     return None # Return None if the event type is not recognised
-
-# Convert utc time to local time
-def convert_utc_to_uk_time(utc_time):
-    # Convert the UTC time to GMT
-    gmt_time = utc_time.astimezone(ZoneInfo('Europe/London'))
-    return gmt_time

@@ -53,24 +53,27 @@ class OrderService:
         if not cart_items:
             raise ValidationError('Cart is empty')
 
-        # Lock the cart
-        cart.locked = True
-        cart.locked_at = datetime.now(tz=ZoneInfo("UTC"))
-        cart.save()
 
         # Create line items for Stripe checkout session
         line_items = []
         for cart_item in cart_items:
-            # Check the stock of the product
-            if cart_item.product.stock < cart_item.quantity:
-                raise ValidationError(cart_item.product.name + ' only has ' + str(cart_item.product.stock) + ' left in stock')
-            elif cart_item.product.reserved_stock < cart_item.quantity:
-                raise ValidationError(cart_item.product.name + ' only has ' + str(cart_item.product.stock - cart_item.product.reserved_stock) + ' left in stock')
+            product = cart_item.product
+
+            # Validate stock             
+            if product.stock < cart_item.quantity:
+                raise ValidationError(f"{product.name} only has {product.stock} left in stock")
+            elif product.reserved_stock < cart_item.quantity:
+                raise ValidationError(f"{product.name} only has {cart_item.product.stock - cart_item.product.reserved_stock} available (reserved stock in use)")
             
             line_items.append({
                 'price': cart_item.product.stripe_price_id, # Stripe price id
                 'quantity': cart_item.quantity
             })
+
+        # Lock the cart
+        cart.locked = True
+        cart.locked_at = datetime.now(tz=ZoneInfo("UTC"))
+        cart.save()
 
         # Create a stripe checkout session
         session = create_stripe_checkout_session(user, valid_data, line_items)

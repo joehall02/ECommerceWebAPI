@@ -4,6 +4,7 @@ import os
 
 # Determie the environment
 flask_env = os.getenv('FLASK_ENV', 'development')
+port = os.getenv('PORT', 5050)
 
 # Set the configuration based on the environment
 if flask_env == 'development':
@@ -18,4 +19,4 @@ app = create_app(config)
 
 # Run the app
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=5050)
+    app.run(host="0.0.0.0", port=port)
