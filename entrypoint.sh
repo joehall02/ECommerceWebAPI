@@ -1,9 +1,12 @@
 #!/bin/bash
 set -e # Exit immediately if a command exits with a non-zero status
 
-echo "Running entrypoint script for role: $1"
+# Use docker compose role if provided, otherwise default to SERVICE_ROLE environment variable
+ROLE=${1:-$SERVICE_ROLE}
 
-if [ "$1" == "backend" ]; then
+echo "Running entrypoint script for role: $ROLE"
+
+if [ "$ROLE" == "backend" ]; then
     # Run migration
     echo "Running migrations..."
     flask db upgrade
@@ -12,12 +15,12 @@ if [ "$1" == "backend" ]; then
     echo "Starting Gunicorn..."
     exec gunicorn -w $GUNICORN_WORKERS -b 0.0.0.0:${PORT:-5050} run:app
 
-elif [ "$1" == "celery" ]; then
+elif [ "$ROLE" == "celery" ]; then
     # Start the Celery worker
     echo "Starting Celery worker..."
     exec celery -A celery_worker.celery worker --loglevel=info
 
-elif [ "$1" == "beat" ]; then
+elif [ "$ROLE" == "beat" ]; then
     # Start the Celery beat scheduler
     echo "Starting Celery beat..."
     exec celery -A celery_worker.celery beat --scheduler redbeat.RedBeatScheduler
