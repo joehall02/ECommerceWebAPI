@@ -18,7 +18,7 @@ if [ "$ROLE" == "backend" ]; then
 elif [ "$ROLE" == "celery" ]; then
     # Start the Celery worker
     echo "Starting Celery worker..."
-    exec celery -A celery_worker.celery worker --loglevel=info
+    exec celery -A celery_worker.celery worker --loglevel=info --concurrency=$CELERY_WORKER_CONCURRENCY
 
 elif [ "$ROLE" == "beat" ]; then
     # Start the Celery beat scheduler
