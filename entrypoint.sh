@@ -7,6 +7,14 @@ ROLE=${1:-$SERVICE_ROLE}
 echo "Running entrypoint script for role: $ROLE"
 
 if [ "$ROLE" == "backend" ]; then
+    # Recreate service account file from environment variable
+    if [ -n "$GOOGLE_SERVICE_ACCOUNT_B64" ]; then
+        echo "Recreating service account file..."
+        echo "$GOOGLE_SERVICE_ACCOUNT_B64" | base64 -d > service-account-file.json
+    else
+        echo "GOOGLE_SERVICE_ACCOUNT_B64 is not set. Skipping service account file recreation."
+    fi
+    
     # Run migration
     echo "Running migrations..."
     flask db upgrade
