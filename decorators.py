@@ -4,6 +4,10 @@ from flask_jwt_extended import get_jwt_identity
 from marshmallow import ValidationError
 from models import User
 from werkzeug.exceptions import TooManyRequests
+import os
+
+# Get the environment variable to determine if errors should be shown
+show_errors = os.getenv('SHOW_ERRORS', False)
 
 def admin_required():
     def decorator(fn):
@@ -39,7 +43,9 @@ def handle_exceptions(fn):
         except TooManyRequests as e:
             return {'error': 'Reached limit for today. Please try again later.'}, 429
         except Exception as e:
-            # return {'error': str(e)}, 500
+            # Log the error for debugging
+            if show_errors == 'True':
+                return {'error': str(e)}, 500        
             return {'error': 'An unexpected error occured. Please try again later.'}, 500
         
     return decorator
