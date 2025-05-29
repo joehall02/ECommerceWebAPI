@@ -28,11 +28,12 @@ else:
 # Set redis client
 redis_client = redis.StrictRedis.from_url(config.CACHE_REDIS_URL)
 
-# Initialise app
-app = create_app(config)
 
 @celery.task(name="tasks.cart_cleanup.cleanup_abandoned_carts")
 def cleanup_abandoned_carts():
+    # Initialise app
+    app = create_app(config)
+    
     lock_key = "lock:product_reserved_stock"
     cache_needs_clearing = False
 

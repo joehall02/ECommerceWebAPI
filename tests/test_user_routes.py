@@ -157,8 +157,6 @@ def test_resend_verification_email(request, mocker, test_client, create_unverifi
 
     response = test_client.post('/user/resend-verification', json=email)
 
-    print(response.json)
-
     assert response.status_code == expected_status_code
 
     # Assert that the send_email function was called
@@ -204,8 +202,6 @@ def test_reset_password(request, mocker, test_client, create_test_user, token_da
     mocked_verify_token = mocker.patch('services.user_service.verify_token', return_value='testemail@test.com')
 
     response = test_client.put(f'/user/reset-password/{token}', json=reset_password)
-
-    print(response.json)
 
     assert response.status_code == expected_status_code
 
@@ -265,8 +261,6 @@ def test_logout_user(request, test_client, expected_status_code, auth_required):
     auth_customer_verification(test_client, auth_required, request)
 
     response = test_client.post('/user/logout')
-
-    print(response.json)
 
     assert response.status_code == expected_status_code
 

@@ -251,8 +251,6 @@ def get_all_test_users(test_client, test_admin_login):
 
     assert response.status_code == 200
     
-    print(response.json)
-
     return response
 
 # Product Fixtures
