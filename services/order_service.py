@@ -338,15 +338,15 @@ class OrderService:
         if order_status not in ['Processing', 'Shipped', 'Delivered']:
             raise ValidationError('Invalid order status')
 
-        if order_status == 'Shipped':
-            # Send an email to the customer
-            email_data = {
-                'to_name': order.full_name,
-                'to_email': order.customer_email,
-                'subject': 'Order Shipped',
-                'text': 'Your order has been shipped! You will receive another email with the tracking number soon.'
-            }
-            send_email(email_data)
+        # Send an email to the customer
+        # if order_status == 'Shipped':
+        #     email_data = {
+        #         'to_name': order.full_name,
+        #         'to_email': order.customer_email,
+        #         'subject': 'Order Shipped',
+        #         'text': 'Your order has been shipped! You will receive another email with the tracking number soon.'
+        #     }
+        #     send_email(email_data)
 
         # Update the order status
         order.status = order_status

@@ -185,12 +185,13 @@ class ProductService:
         update_stripe_product_and_price(product, valid_data)
         
         if 'stock' in valid_data:
+            # Check if the stock is a negative number
             if valid_data['stock'] < 0:
                 raise ValidationError('Stock cannot be a negative number')
             
-        # Check if the stock is less that the reserved stock
-        if product.reserved_stock > valid_data['stock']:
-            raise ValidationError('Stock cannot be less than the reserved stock')
+            # Check if the stock is less that the reserved stock
+            if product.reserved_stock > valid_data['stock']:
+                raise ValidationError('Stock cannot be less than the reserved stock')        
 
         # Update product details
         # Loop through the data and update the product attributes using the key-value pairs in the data
@@ -200,6 +201,7 @@ class ProductService:
         # Clear the cache
         cache.delete_memoized(ProductService.get_all_products)
         cache.delete_memoized(ProductService.get_all_admin_products)
+        cache.delete_memoized(FeaturedProductService.get_all_featured_products)
 
         product.save()
 
@@ -230,6 +232,7 @@ class ProductService:
         # Clear the cache
         cache.delete_memoized(ProductService.get_all_products)
         cache.delete_memoized(ProductService.get_all_admin_products)
+        cache.delete_memoized(FeaturedProductService.get_all_featured_products)
 
         return product
     
@@ -286,7 +289,7 @@ class FeaturedProductService:
         
         for product in products:
             # If products stock is 0, dont add it to the list
-            if product.stock > 0:
+            if (product.stock - product.reserved_stock) > 0:
                 image_path = product.product_images[0].image_path if product.product_images else None # Get the first image path if it exists
                 product_data = {
                     'id': product.id,
@@ -370,9 +373,6 @@ class ProductImageService:
 
         new_product_image.save()
 
-        # Clear the cache
-        cache.delete_memoized(ProductImageService.get_product_image)
-
         return new_product_image
 
     @staticmethod    
@@ -414,6 +414,7 @@ class ProductImageService:
 
         # Clear the cache
         cache.delete_memoized(ProductImageService.get_product_image)
+        cache.delete_memoized(FeaturedProductService.get_all_featured_products)
 
         return new_product_image
     

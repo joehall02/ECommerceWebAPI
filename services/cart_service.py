@@ -5,7 +5,7 @@ from marshmallow import ValidationError
 from models import Cart, CartProduct, Product
 from flask_jwt_extended import get_jwt_identity, set_access_cookies, set_refresh_cookies
 from schemas import CartSchema, CartProductSchema, ProductSchema, ProductCartProductCombinedSchema
-from services.product_service import ProductService
+from services.product_service import FeaturedProductService, ProductService
 from services.user_service import UserService
 from exts import cache
 
@@ -102,6 +102,7 @@ class CartService:
 
         # Clear the cache
         cache.delete_memoized(ProductService.get_all_products)
+        cache.delete_memoized(FeaturedProductService.get_all_featured_products)
 
         return cart_product
 
@@ -128,8 +129,9 @@ class CartService:
         # Check if the user exists
         if not user:
             raise ValidationError('User not found')
-
-        cart = Cart.query.get(user)
+        
+        # Get the cart for the user
+        cart = Cart.query.filter_by(user_id=user).first()
 
         # Check if the cart exists
         if not cart:
@@ -200,6 +202,7 @@ class CartService:
 
         # Clear the cache
         cache.delete_memoized(ProductService.get_all_products)
+        cache.delete_memoized(FeaturedProductService.get_all_featured_products)
 
         return response
     
@@ -227,5 +230,6 @@ class CartService:
 
         # Clear the cache
         cache.delete_memoized(ProductService.get_all_products)
+        cache.delete_memoized(FeaturedProductService.get_all_featured_products)
 
         return cart_product

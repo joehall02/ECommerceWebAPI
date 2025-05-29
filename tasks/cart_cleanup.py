@@ -7,13 +7,15 @@ import os
 from config import Development, Production
 import redis
 from exts import cache
-from services.product_service import ProductService
+from services.product_service import FeaturedProductService, ProductService
 
 # Lock expiration
 LOCK_EXPIRATION = 60 * 30  # 30 minutes
 
 # Determine the environment
 flask_env = os.getenv('FLASK_ENV', 'development')
+cart_unlock_time_hours = int(os.getenv('CART_UNLOCK_TIME_HOURS', 24)) # Default to 24 hours
+reserved_stock_cleanup_hours = int(os.getenv('RESERVED_STOCK_CLEANUP_HOURS', 1)) # Default to 1 hour
 
 # Set the configuration based on the environment
 if flask_env == 'development':
@@ -45,16 +47,16 @@ def cleanup_abandoned_carts():
             carts = Cart.query.all()
 
             for cart in carts:
-                # Unlock carts locked > 24h ago, meaning any cart that been locked due to abandoned stripe checkout session
-                if cart.locked and cart.locked_at and (now - cart.locked_at > timedelta(hours=24)):
+                # Unlock carts locked > cart unlock time, meaning any cart that been locked due to abandoned stripe checkout session
+                if cart.locked and cart.locked_at and (now - cart.locked_at > timedelta(hours=cart_unlock_time_hours)):
                     cart.locked = False
                     cart.locked_at = None
                     print(f"Unlocked cart {cart.id}")
                     cart.save()
 
                 # Clean up stale carts
-                # If the cart is not locked and the product was added more than 60 minutes ago, remove the product from the cart and release the reserved stock
-                if not cart.locked and cart.product_added_at and (now - cart.product_added_at > timedelta(hours=1)):
+                # If the cart is not locked and the product was added more than reserved stock cleanup, remove the product from the cart and release the reserved stock
+                if not cart.locked and cart.product_added_at and (now - cart.product_added_at > timedelta(hours=reserved_stock_cleanup_hours)):
                     for cp in cart.cart_products:
                         product = Product.query.get(cp.product_id)
                         if product:
@@ -70,6 +72,7 @@ def cleanup_abandoned_carts():
         # Clear the cache
         if cache_needs_clearing:
             cache.delete_memoized(ProductService.get_all_products)
+            cache.delete_memoized(FeaturedProductService.get_all_featured_products)
 
     finally:
         # Release the lock

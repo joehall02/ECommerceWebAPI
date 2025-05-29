@@ -41,7 +41,7 @@ def create_app(config):
     migrate = Migrate(app, db)
 
     # Create an instance of the API
-    api = Api(app) 
+    api = Api(app, doc=False) 
 
     # Import the namespaces
     api.add_namespace(user_ns)

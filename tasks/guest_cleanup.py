@@ -8,13 +8,14 @@ from config import Development, Production
 import redis
 from exts import cache
 from services.user_service import UserService
-from services.product_service import ProductService
+from services.product_service import FeaturedProductService, ProductService
 
 # Lock expiration
 LOCK_EXPIRATION = 60 * 30  # 30 minutes
 
 # Determine the environment
 flask_env = os.getenv('FLASK_ENV', 'development')
+delete_guest_users_days = int(os.getenv('DELETE_GUEST_USERS_DAYS', 7))  # Default to 7 days
 
 # Set the configuration based on the environment
 if flask_env == 'development':
@@ -46,8 +47,8 @@ def cleanup_old_guest_users():
             guests = User.query.filter_by(role='guest').all()
 
             for guest in guests:
-                # Check if the user was created more than 7 days ago
-                if now - guest.created_at > timedelta(days=7):
+                # Check if the user was created more than delete guest user days ago
+                if now - guest.created_at > timedelta(days=delete_guest_users_days):
                     # Clean up stale carts
                     cart = Cart.query.filter_by(user_id=guest.id).first()
 
@@ -68,6 +69,8 @@ def cleanup_old_guest_users():
                 cache.delete_memoized(UserService.get_all_admin_users)
                 cache.delete_memoized(UserService.get_dashboard_data)           
                 cache.delete_memoized(ProductService.get_all_products)
+                cache.delete_memoized(FeaturedProductService.get_all_featured_products)
+
 
     finally:
         # Release the lock
