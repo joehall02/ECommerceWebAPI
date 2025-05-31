@@ -36,10 +36,11 @@ def create_app(config):
     r"/*": {
             "origins": app.config.get('FRONTEND_ORIGIN_URL'),
             "supports_credentials": True,
-            "allow_headers": ["Content-Type", "Authorization", "X-Frontend-Secret"]
+            "allow_headers": ["Content-Type", "Authorization", "X-Frontend-Secret"],
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
         }
     })
-    
+
     # Initialise the JWT manager
     jwt = JWTManager(app)
 
@@ -61,6 +62,10 @@ def create_app(config):
     @app.before_request
     def restrict_api_access():
         if os.getenv('FLASK_ENV') == 'production':
+            # Allow preflight requests
+            if request.method == 'OPTIONS':
+                return
+
             # Skip the check for stripe webhook endpoint
             if request.path == '/order/webhook':
                 return
