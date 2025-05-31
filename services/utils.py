@@ -18,7 +18,7 @@ def allowed_file(filename):
 def upload_image_to_google_cloud_storage(image_file):
     try:
         # Set the Google Cloud Storage bucket name
-        bucket_name = current_app.config['GOOGLE_CLOUD_STORAGE_BUCKET_NAME']
+        bucket_name = current_app.config.get('GOOGLE_CLOUD_STORAGE_BUCKET_NAME')
 
         if not bucket_name:
             raise ValidationError('Google Cloud Storage bucket name not found')
@@ -50,7 +50,7 @@ def upload_image_to_google_cloud_storage(image_file):
 def remove_image_from_google_cloud_storage(image_path):
     try:
         # Set the Google Cloud Storage bucket name
-        bucket_name = current_app.config['GOOGLE_CLOUD_STORAGE_BUCKET_NAME']
+        bucket_name = current_app.config.get('GOOGLE_CLOUD_STORAGE_BUCKET_NAME')
 
         # Check if the bucket name exists
         if not bucket_name:
@@ -78,10 +78,10 @@ def send_email(data):
     try:
         print("Sending email")
 
-        url = f"https://api.mailgun.net/v3/{current_app.config['MAILGUN_DOMAIN_NAME']}/messages"
-        auth = ("api", current_app.config['MAILGUN_API_KEY'])
+        url = f"https://api.mailgun.net/v3/{current_app.config.get('MAILGUN_DOMAIN_NAME')}/messages"
+        auth = ("api", current_app.config.get('MAILGUN_API_KEY'))
         data = {
-            "from": f"{current_app.config['MAILGUN_SENDER_EMAIL']}",
+            "from": f"{current_app.config.get('MAILGUN_SENDER_EMAIL')}",
             "to": f"{data['to_name']} <{data['to_email']}>",
             "subject": data['subject'],
             "text": data['text']
@@ -105,11 +105,11 @@ def send_contact_us_email(data):
     try:
         print("Sending contact us email")
         
-        url = f"https://api.mailgun.net/v3/{current_app.config['MAILGUN_DOMAIN_NAME']}/messages"
-        auth = ("api", current_app.config['MAILGUN_API_KEY'])
+        url = f"https://api.mailgun.net/v3/{current_app.config.get('MAILGUN_DOMAIN_NAME')}/messages"
+        auth = ("api", current_app.config.get('MAILGUN_API_KEY'))
         data = {
             "from": f"{data['from_name']} <{data['from_email']}>",
-            "to": f"{current_app.config['CONTACT_US_EMAIL']}",
+            "to": f"{current_app.config.get('CONTACT_US_EMAIL')}",
             "subject": f"Contact us: {data['subject']}",
             "text": data['message']
         }
@@ -131,21 +131,21 @@ def send_contact_us_email(data):
 # Generate a verification token using the email as the unique identifier
 def generate_verification_token(email):
     # Create a URLSafeTimedSerializer object using the secret key
-    serialiser = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+    serialiser = URLSafeTimedSerializer(current_app.config.get('SECRET_KEY'))
 
     # Generate the token using the email and the security salt
-    token = serialiser.dumps(email, salt=current_app.config['SECURITY_SALT'])
+    token = serialiser.dumps(email, salt=current_app.config.get('SECURITY_SALT'))
 
     return token
 
 # Verify the verification token, expire the token after 3600 seconds (1 hour)
 def verify_token(token, expiration=3600):
     # Create a URLSafeTimedSerializer object using the secret key
-    serialiser = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+    serialiser = URLSafeTimedSerializer(current_app.config.get('SECRET_KEY'))
 
     # Verify the token using the security salt and the expiration time
     try:
-        email = serialiser.loads(token, salt=current_app.config['SECURITY_SALT'], max_age=expiration)
+        email = serialiser.loads(token, salt=current_app.config.get('SECURITY_SALT'), max_age=expiration)
     except:
         return None
     
@@ -252,8 +252,8 @@ def create_stripe_checkout_session(user, valid_data, line_items):
             payment_method_types=['card'],
             line_items=line_items,
             mode='payment',
-            success_url=f'{current_app.config['FRONTEND_PUBLIC_URL']}/checkout/success',
-            cancel_url=f'{current_app.config['FRONTEND_PUBLIC_URL']}/checkout/cancel',
+            success_url=f'{current_app.config.get('FRONTEND_PUBLIC_URL')}/checkout/success',
+            cancel_url=f'{current_app.config.get('FRONTEND_PUBLIC_URL')}/checkout/cancel',
             customer_email=user.email if not user.stripe_customer_id else None, # Attach the email to the session if the user doesn't have a stripe customer id
             customer=user.stripe_customer_id if user.stripe_customer_id else None, # Attach the customer to the session if one exists
             customer_creation='always' if not user.stripe_customer_id else None, # Create a new customer if one doesn't exist

@@ -44,6 +44,7 @@ class Production(Config):
     CACHE_REDIS_URL = os.getenv('PRODUCTION_REDIS_URL') # Get the Redis URL from the environment variables
     CELERY_BROKER_URL = os.getenv('PRODUCTION_REDIS_URL') # Get the Celery broker URL from the environment variables
     CELERY_RESULT_BACKEND = os.getenv('PRODUCTION_REDIS_URL') # Get the Celery result backend URL from the environment variables
+    FRONTEND_SECRET_HEADER = os.getenv('FRONTEND_SECRET_HEADER') # Get the frontend secret header from the environment variables
 
 # Test configuration class
 class Test(Config):

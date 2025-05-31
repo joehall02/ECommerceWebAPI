@@ -20,7 +20,7 @@ redis_client = None # Will be set in init_extensions
 def init_extensions(app, config):
     global redis_client
 
-    storage_uri = app.config['CACHE_REDIS_URL']
+    storage_uri = app.config.get('CACHE_REDIS_URL')
     
     # Set up Redis client if not in test mode
     if config != Test:

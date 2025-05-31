@@ -79,7 +79,7 @@ class UserService:
         new_cart.save()
 
         # Send verification email
-        verification_link = f"{current_app.config['FRONTEND_PUBLIC_URL']}/login/{new_user.verification_token}"
+        verification_link = f"{current_app.config.get('FRONTEND_PUBLIC_URL')}/login/{new_user.verification_token}"
         email_data = {
             'to_name': new_user.full_name,
             'to_email': new_user.email,
@@ -171,7 +171,7 @@ class UserService:
         user.save()
 
         # Send verification email
-        verification_link = f"{current_app.config['FRONTEND_PUBLIC_URL']}/login/{user.verification_token}"
+        verification_link = f"{current_app.config.get('FRONTEND_PUBLIC_URL')}/login/{user.verification_token}"
         email_data = {
             'to_name': user.full_name,
             'to_email': user.email,
@@ -205,8 +205,8 @@ class UserService:
         new_cart.save()
 
         # Create am access token for the guest user
-        access_token = create_access_token(identity=str(new_user.id), expires_delta=current_app.config['JWT_ACCESS_TOKEN_EXPIRES']) # Create an access token for the user with a 1 hour expiry
-        refresh_token = create_refresh_token(identity=str(new_user.id), expires_delta=current_app.config['JWT_REFRESH_TOKEN_EXPIRES']) # Create a refresh token for the user
+        access_token = create_access_token(identity=str(new_user.id), expires_delta=current_app.config.get('JWT_ACCESS_TOKEN_EXPIRES')) # Create an access token for the user with a 1 hour expiry
+        refresh_token = create_refresh_token(identity=str(new_user.id), expires_delta=current_app.config.get('JWT_REFRESH_TOKEN_EXPIRES')) # Create a refresh token for the user
 
         # Create a response
         response = make_response(jsonify({'message': 'Guest user created', 'access_token': access_token, 'refresh_token': refresh_token}))
@@ -234,12 +234,12 @@ class UserService:
         if not user.is_verified:
             raise ValidationError('Email not verified')
 
-        access_token = create_access_token(identity=str(user.id), expires_delta=current_app.config['JWT_ACCESS_TOKEN_EXPIRES']) # Create an access token for the user with a 1 hour expiry
+        access_token = create_access_token(identity=str(user.id), expires_delta=current_app.config.get('JWT_ACCESS_TOKEN_EXPIRES')) # Create an access token for the user with a 1 hour expiry
         
         if valid_data['remember_me'] == True:
-            refresh_token = create_refresh_token(identity=str(user.id), expires_delta=current_app.config['JWT_REFRESH_TOKEN_REMEMBER_ME_EXPIRES'])
+            refresh_token = create_refresh_token(identity=str(user.id), expires_delta=current_app.config.get('JWT_REFRESH_TOKEN_REMEMBER_ME_EXPIRES'))
         else:
-            refresh_token = create_refresh_token(identity=str(user.id), expires_delta=current_app.config['JWT_REFRESH_TOKEN_EXPIRES']) 
+            refresh_token = create_refresh_token(identity=str(user.id), expires_delta=current_app.config.get('JWT_REFRESH_TOKEN_EXPIRES')) 
         
         # Create a response
         response = make_response(jsonify({'message': 'Login successful'}))
@@ -283,7 +283,7 @@ class UserService:
     @staticmethod
     def refresh_token():
         current_user_id = get_jwt_identity()
-        new_access_token = create_access_token(identity=current_user_id, expires_delta=current_app.config['JWT_ACCESS_TOKEN_EXPIRES']) # Create a new access token
+        new_access_token = create_access_token(identity=current_user_id, expires_delta=current_app.config.get('JWT_ACCESS_TOKEN_EXPIRES')) # Create a new access token
 
         response = make_response(jsonify({'message': 'Token refreshed'}))     
 
@@ -317,7 +317,7 @@ class UserService:
         user.save()
 
         # Send verification email
-        reset_password_link = f"{current_app.config['FRONTEND_PUBLIC_URL']}/reset-password/{user.verification_token}"
+        reset_password_link = f"{current_app.config.get('FRONTEND_PUBLIC_URL')}/reset-password/{user.verification_token}"
         email_data = {
             'to_name': user.full_name,
             'to_email': user.email,

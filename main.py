@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, request
 from flask_restx import Api
 from flask_jwt_extended import JWTManager
 from flask_migrate import Migrate
@@ -13,7 +13,7 @@ from api.cart import cart_ns
 import stripe
 from jwt import ExpiredSignatureError
 from flask_jwt_extended.exceptions import NoAuthorizationError
-
+import os
 
 def create_app(config):
     # Create an instance of the Flask app
@@ -26,13 +26,13 @@ def create_app(config):
     init_extensions(app, config)
 
     # Initialise the Stripe API
-    stripe.api_key = app.config['STRIPE_API_KEY']
+    stripe.api_key = app.config.get('STRIPE_API_KEY')
 
     # Initialise the Stripe webhook secret
-    stripe.webhook_secret = app.config['STRIPE_WEBHOOK_SECRET']
+    stripe.webhook_secret = app.config.get('STRIPE_WEBHOOK_SECRET')
 
     # Enable CORS
-    CORS(app, supports_credentials=True, origins=[app.config['FRONTEND_ORIGIN_URL']]) 
+    CORS(app, supports_credentials=True, origins=[app.config.get('FRONTEND_ORIGIN_URL')]) 
 
     # Initialise the JWT manager
     jwt = JWTManager(app)
@@ -50,6 +50,16 @@ def create_app(config):
     api.add_namespace(order_ns)
     api.add_namespace(address_ns)
     api.add_namespace(cart_ns)
+
+    # Restrict api access to the frontend
+    @app.before_request
+    def restrict_api_access():
+        if os.getenv('FLASK_ENV') == 'production':
+            expected_secret = app.config.get("FRONTEND_SECRET_HEADER")
+            secret_header = request.headers.get('X-Frontend-Secret')
+
+            if secret_header != expected_secret:
+                return {'error': 'Forbidden'}, 403
 
     # Error handler for 401 error when user is logged out
     @api.errorhandler(NoAuthorizationError)
