@@ -69,8 +69,8 @@ def cleanup_old_guest_users():
             if cache_needs_clearing:
                 cache.delete_memoized(UserService.get_all_admin_users)
                 cache.delete_memoized(UserService.get_dashboard_data)           
-                cache.delete_memoized(ProductService.get_all_products)
-                cache.delete_memoized(FeaturedProductService.get_all_featured_products)
+                # cache.delete_memoized(ProductService.get_all_products)
+                # cache.delete_memoized(FeaturedProductService.get_all_featured_products)
 
 
     finally:

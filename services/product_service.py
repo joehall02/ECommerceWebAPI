@@ -57,7 +57,7 @@ class ProductService:
     @cache.memoize(timeout=86400) # Cache the results for 24 hours
     def get_all_products(page=1, per_page=9, category_id=None, sort_by=None):
         print('Fetching products')
-        query = Product.query.filter(Product.stock > 0, (Product.stock - Product.reserved_stock) > 0) # Get all products with stock greater than 0
+        query = Product.query.filter(Product.stock > 0) # Get all products with stock greater than 0
         
         # Check if a category id is provided
         if category_id:
@@ -136,7 +136,6 @@ class ProductService:
 
     @staticmethod
     def get_product(product_id):
-        print('Fetching product')
         # Check if the product id is provided
         if not product_id:
             raise ValidationError('No product id provided')
@@ -289,7 +288,7 @@ class FeaturedProductService:
         
         for product in products:
             # If products stock is 0, dont add it to the list
-            if (product.stock - product.reserved_stock) > 0:
+            if product.stock > 0:
                 image_path = product.product_images[0].image_path if product.product_images else None # Get the first image path if it exists
                 product_data = {
                     'id': product.id,

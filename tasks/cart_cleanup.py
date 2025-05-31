@@ -35,7 +35,7 @@ def cleanup_abandoned_carts():
     app = create_app(config)
     
     lock_key = "lock:product_reserved_stock"
-    cache_needs_clearing = False
+    # cache_needs_clearing = False
 
     # Try to acquire the lock
     if not redis_client.set(lock_key, "1", nx=True, ex=LOCK_EXPIRATION):
@@ -68,12 +68,12 @@ def cleanup_abandoned_carts():
                     cart.product_added_at = None
                     print(f"Cleaned up cart {cart.id}")
                     cart.save()
-                    cache_needs_clearing = True
+                    # cache_needs_clearing = True
 
         # Clear the cache
-        if cache_needs_clearing:
-            cache.delete_memoized(ProductService.get_all_products)
-            cache.delete_memoized(FeaturedProductService.get_all_featured_products)
+        # if cache_needs_clearing:
+        #     cache.delete_memoized(ProductService.get_all_products)
+        #     cache.delete_memoized(FeaturedProductService.get_all_featured_products)
 
     finally:
         # Release the lock

@@ -157,7 +157,7 @@ class AddressService:
             raise ValidationError('Address does not belong to the user')
         
         # if is_default is True, set all addresses except the current one to False
-        if valid_data['is_default'] == True:
+        if valid_data.get('is_default') == True:
             addresses = Address.query.filter_by(user_id=user.id).all()
             for addr in addresses:
                 if addr.id != address_id:    

@@ -1,6 +1,7 @@
 from marshmallow import ValidationError
 from models import Category
 from schemas import CategorySchema, ProductSchema
+from services.product_service import FeaturedProductService, ProductService
 from services.utils import remove_image_from_google_cloud_storage # Used to delete product images from cloud bucket if admin deletes a category
 from exts import cache
 
@@ -115,6 +116,9 @@ class CategoryService:
         # Clear the cache
         cache.delete_memoized(CategoryService.get_all_admin_categories)
         cache.delete_memoized(CategoryService.get_all_categories)
+        cache.delete_memoized(ProductService.get_all_products)
+        cache.delete_memoized(ProductService.get_all_admin_products)
+        cache.delete_memoized(FeaturedProductService.get_all_featured_products)
 
         return category
     
@@ -146,5 +150,8 @@ class CategoryService:
         # Clear the cache
         cache.delete_memoized(CategoryService.get_all_admin_categories)
         cache.delete_memoized(CategoryService.get_all_categories)
+        cache.delete_memoized(ProductService.get_all_products)
+        cache.delete_memoized(ProductService.get_all_admin_products)
+        cache.delete_memoized(FeaturedProductService.get_all_featured_products)
 
         return category

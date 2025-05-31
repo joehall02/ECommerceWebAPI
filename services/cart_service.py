@@ -101,8 +101,8 @@ class CartService:
         cart_product.save()
 
         # Clear the cache
-        cache.delete_memoized(ProductService.get_all_products)
-        cache.delete_memoized(FeaturedProductService.get_all_featured_products)
+        # cache.delete_memoized(ProductService.get_all_products)
+        # cache.delete_memoized(FeaturedProductService.get_all_featured_products)
 
         return cart_product
 
@@ -119,6 +119,20 @@ class CartService:
         # Validate the request data against the cart product schema
         valid_data = cart_product_schema.load(data, partial=True) # partial=True allows for partial data to be validated
 
+        product = Product.query.get(product_id)
+
+        # Check if the product exists
+        if not product:
+            raise ValidationError('Product not found')
+        
+        # Check if the product is in stock
+        if product.stock < valid_data['quantity']:
+            raise ValidationError('Product is out of stock')
+        
+        # Reserve the stock for the product
+        if product.stock < valid_data['quantity'] + product.reserved_stock:
+            raise ValidationError('Product is out of stock.')
+        
         # Get the user if JWT is provided, else create a guest user        
         user = get_jwt_identity()
         
@@ -137,16 +151,6 @@ class CartService:
         if not cart:
             raise ValidationError('Cart not found')
         
-        product = Product.query.get(product_id)
-
-        # Check if the product exists
-        if not product:
-            raise ValidationError('Product not found')
-        
-        # Check if the product is in stock
-        if product.stock < valid_data['quantity']:
-            raise ValidationError('Product is out of stock')
-
         # If the cart product already exists, change the quantity to the new quantity
         existing_cart_product = CartProduct.query.filter_by(cart_id=cart.id, product_id=product_id).first()
         if existing_cart_product:
@@ -166,10 +170,7 @@ class CartService:
             existing_cart_product.save()
             return cart_product_schema.dump(existing_cart_product)
 
-        # Reserve the stock for the product
-        if product.stock < valid_data['quantity'] + product.reserved_stock:
-            raise ValidationError('Product is out of stock.')
-        
+        # If the product doesnt exist in the cart, reserve the stock for the product
         product.reserved_stock += valid_data['quantity']
         product.save()
 
@@ -201,8 +202,8 @@ class CartService:
             print(guest_response.json['refresh_token'])
 
         # Clear the cache
-        cache.delete_memoized(ProductService.get_all_products)
-        cache.delete_memoized(FeaturedProductService.get_all_featured_products)
+        # cache.delete_memoized(ProductService.get_all_products)
+        # cache.delete_memoized(FeaturedProductService.get_all_featured_products)
 
         return response
     
@@ -229,7 +230,7 @@ class CartService:
         cart_product.delete()
 
         # Clear the cache
-        cache.delete_memoized(ProductService.get_all_products)
-        cache.delete_memoized(FeaturedProductService.get_all_featured_products)
+        # cache.delete_memoized(ProductService.get_all_products)
+        # cache.delete_memoized(FeaturedProductService.get_all_featured_products)
 
         return cart_product
