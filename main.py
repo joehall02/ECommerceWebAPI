@@ -55,9 +55,14 @@ def create_app(config):
     @app.before_request
     def restrict_api_access():
         if os.getenv('FLASK_ENV') == 'production':
+            # Skip the check for stripe webhook endpoint
+            if request.path == '/order/webhook':
+                return
+            
             expected_secret = app.config.get("FRONTEND_SECRET_HEADER")
             secret_header = request.headers.get('X-Frontend-Secret')
 
+            # If the secret header is not present or does not match the expected secret, return a 403 error
             if secret_header != expected_secret:
                 return {'error': 'Forbidden'}, 403
 

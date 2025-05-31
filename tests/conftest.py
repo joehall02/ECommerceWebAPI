@@ -397,7 +397,8 @@ def create_test_order(test_client, mocker, add_test_product_to_cart, test_admin_
         'address_line_2': 'Test Area',
         'city': 'Test City',
         'postcode': 'TE1 1ST',
-        'customer_email': 'test@test.com'
+        'customer_email': 'test@test.com',
+        'stripe_session_id': 'test_session_id'
     }
     
     # Mock the stripe_webhook_handler function

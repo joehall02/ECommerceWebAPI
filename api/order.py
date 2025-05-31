@@ -160,3 +160,21 @@ class OrderResource(Resource):
             return {'message': 'Webhook received but no order data processed'}, 200
         
         return marshal(response, order_model), 200
+    
+@order_ns.route('/stripe_session_status', methods=['GET'])
+class OrderResource(Resource):
+    @jwt_required()
+    @handle_exceptions
+    def get(self):
+        session_id = request.args.get('session_id')
+
+        print(f"Received session_id: {session_id}")
+
+        session_status = OrderService.validate_stripe_session(session_id)
+
+        print(f"Session status: {session_status}")
+
+        if not session_status['success']:
+            return session_status, 400
+
+        return session_status, 200

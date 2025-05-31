@@ -1,5 +1,6 @@
 from flask_jwt_extended import get_jwt_identity
 import pytest
+from pytest_mock import mocker
 from tests.utils import auth_admin_verification, auth_customer_verification
 
 # Fixtures
@@ -27,7 +28,8 @@ def valid_order_data():
         'address_line_2': 'Test Area',
         'city': 'Test City',
         'postcode': 'TE1 1ST',
-        'customer_email': 'test@test.com'
+        'customer_email': 'test@test.com',
+        'stripe_session_id': 'test_session_id',
     }
 
 @pytest.fixture
@@ -161,5 +163,22 @@ def test_get_all_orders_for_user(request, test_client, get_all_test_users, expec
     auth_admin_verification(test_client, auth_required, request)
 
     response = test_client.get(f'/order/admin/user/{user_id}')
+
+    assert response.status_code == expected_status_code
+
+# Test check stripe session status route
+@pytest.mark.parametrize('expected_status_code, auth_required', [
+    (200, True), # Success Case
+    (400, True), # Failure Case: Order not found
+    (401, False) # Unauthorised Case: User not logged in
+])
+
+def test_check_stripe_session_status(request, test_client, expected_status_code, auth_required):
+    if (expected_status_code == 200):
+        test_create_order = request.getfixturevalue('create_test_order')
+
+    auth_customer_verification(test_client, auth_required, request)
+
+    response = test_client.get(f'/order/stripe_session_status?session_id=test_session_id')
 
     assert response.status_code == expected_status_code

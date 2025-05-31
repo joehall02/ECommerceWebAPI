@@ -116,6 +116,7 @@ class OrderService:
             city = valid_data['city'],
             postcode = valid_data['postcode'],
             customer_email = valid_data['customer_email'],
+            stripe_session_id = valid_data['stripe_session_id'],
             user_id = user,
         )
         new_order.save()
@@ -407,6 +408,30 @@ class OrderService:
             'total_orders': orders_query.total
         }
 
-         
-
+    @staticmethod
+    def validate_stripe_session(session_id):
+        # Check if the session id is provided
+        if not session_id:
+            return {
+                'success': False,
+                'message': 'No session id provided'
+            }
         
+        print(f"Session id: {session_id}")
+
+        # Get order by the session id
+        order = Order.query.filter_by(stripe_session_id=session_id).first()
+
+        print(f"Order session id: {order.stripe_session_id if order else 'No order found'}")
+
+        # Check if the order exists
+        if not order:
+            return {
+                'success': False,
+                'message': 'Order not found'
+            }
+        
+        return {
+            'success': True,
+            'message': 'Order found'
+        }
