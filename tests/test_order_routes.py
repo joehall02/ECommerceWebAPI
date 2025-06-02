@@ -36,6 +36,7 @@ def valid_order_data():
 def valid_update_order_data():
     return {
         'status': 'Shipped',
+        'tracking_url': 'http://tracking.url/12345',
     }
 
 # Test cases
@@ -141,14 +142,14 @@ def test_update_order(request, test_client, mocker, create_test_order, update_or
 
     auth_admin_verification(test_client, auth_required, request)
 
-    # mocked_send_email = mocker.patch('services.order_service.send_email', return_value={'message': 'Email sent successfully'})
+    mocked_send_email = mocker.patch('services.order_service.send_email', return_value={'message': 'Email sent successfully'})
 
     response = test_client.put(f'/order/admin/{order_id}', json=order_data)
 
     assert response.status_code == expected_status_code
 
-    # if (expected_status_code == 200):
-    #     mocked_send_email.assert_called_once()
+    if (expected_status_code == 200):
+        mocked_send_email.assert_called_once()
 
 # Test the get all orders for a user route (Admin)
 @pytest.mark.parametrize('expected_status_code, auth_required', [
