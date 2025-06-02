@@ -23,6 +23,7 @@ order_model = order_ns.model('Order', {
     'city': fields.String(required=True),
     'postcode': fields.String(required=True),
     'customer_email': fields.String(required=True),
+    'tracking_url': fields.String(), # This field is not required
     'user_id': fields.Integer(required=True),    
 })
     

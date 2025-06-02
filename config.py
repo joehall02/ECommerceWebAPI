@@ -22,6 +22,9 @@ class Config:
     MAILGUN_DOMAIN_NAME = os.getenv('MAILGUN_DOMAIN_NAME') # Get the MAILGUN domain name from the environment variables
     MAILGUN_API_KEY = os.getenv('MAILGUN_API_KEY') # Get the MAILGUN API key from the environment variables
     MAILGUN_SENDER_EMAIL = os.getenv('MAILGUN_SENDER_EMAIL') # Get the MAILGUN sender email from the environment variables
+    MAILGUN_VERIFY_EMAIL_TEMPLATE= os.getenv('MAILGUN_VERIFY_EMAIL_TEMPLATE') # Get the MAILGUN verify email template from the environment variables
+    MAILGUN_RESET_PASSWORD_TEMPLATE= os.getenv('MAILGUN_RESET_PASSWORD_TEMPLATE') # Get the MAILGUN reset password template from the environment variables
+    MAILGUN_ORDER_SHIPPED_TEMPLATE= os.getenv('MAILGUN_ORDER_SHIPPED_TEMPLATE') # Get the MAILGUN order shipped template from the environment variables
     CONTACT_US_EMAIL = os.getenv('CONTACT_US_EMAIL') # Get the contact us email from the environment variables
     CACHE_TYPE = 'RedisCache' # Set the cache type to Redis
     GOOGLE_CLOUD_STORAGE_BUCKET_NAME = os.getenv('GOOGLE_CLOUD_STORAGE_BUCKET_NAME') # Get the Google Cloud Storage bucket name from the environment variables

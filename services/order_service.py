@@ -340,14 +340,22 @@ class OrderService:
             raise ValidationError('Invalid order status')
 
         # Send an email to the customer
-        # if order_status == 'Shipped':
-        #     email_data = {
-        #         'to_name': order.full_name,
-        #         'to_email': order.customer_email,
-        #         'subject': 'Order Shipped',
-        #         'text': 'Your order has been shipped! You will receive another email with the tracking number soon.'
-        #     }
-        #     send_email(email_data)
+        if order_status == 'Shipped':
+            # Check if the tracking URL is provided
+            if not valid_data.get('tracking_url'):
+                raise ValidationError('Tracking URL not provided')
+
+            email_data = {
+                'to_name': order.full_name,
+                'to_email': order.customer_email,
+                'subject': 'Order Shipped',
+                'template': f'{current_app.config.get('MAILGUN_ORDER_SHIPPED_TEMPLATE')}',
+                'button_link': valid_data.get('tracking_url')
+            }
+            send_email(email_data)
+
+            # Update the order with the tracking URL
+            order.tracking_url = valid_data.get('tracking_url')            
 
         # Update the order status
         order.status = order_status

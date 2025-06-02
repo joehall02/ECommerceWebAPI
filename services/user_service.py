@@ -84,13 +84,10 @@ class UserService:
             'to_name': new_user.full_name,
             'to_email': new_user.email,
             'subject': 'Verify your email address',
-            'text': f'Click the link to verify your email address: {verification_link}'
+            'template': f'{current_app.config.get("MAILGUN_VERIFY_EMAIL_TEMPLATE")}',
+            'button_link': verification_link,
         }
-        
-        # Clear the cache
-        cache.delete_memoized(UserService.get_all_admin_users)
-        cache.delete_memoized(UserService.get_dashboard_data)
-        
+                
         # Send the verification email
         try:
             send_email(email_data)
@@ -101,6 +98,9 @@ class UserService:
         new_user.last_verification_email_sent = datetime.now(tz=ZoneInfo("UTC"))
         new_user.save()
 
+        # Clear the cache
+        cache.delete_memoized(UserService.get_all_admin_users)
+        cache.delete_memoized(UserService.get_dashboard_data)
 
         return new_user
     
@@ -176,10 +176,16 @@ class UserService:
             'to_name': user.full_name,
             'to_email': user.email,
             'subject': 'Verify your email address',
-            'text': f'Click the link to verify your email address: {verification_link}'
+            'template': f'{current_app.config.get("MAILGUN_VERIFY_EMAIL_TEMPLATE")}',
+            'button_link': verification_link,
         }
 
-        send_email(email_data)
+        print(current_app.config.get('MAILGUN_VERIFY_EMAIL_TEMPLATE'))
+
+        try:
+            send_email(email_data)
+        except Exception as e:
+            raise ValidationError('Failed to send verification email. Please try again later.')
 
         user.last_verification_email_sent = datetime.now(tz=ZoneInfo("UTC"))
         user.save()
@@ -322,7 +328,8 @@ class UserService:
             'to_name': user.full_name,
             'to_email': user.email,
             'subject': 'Reset your password',
-            'text': f'Click the link to reset your password: {reset_password_link}'
+            'template': f'{current_app.config.get("MAILGUN_RESET_PASSWORD_TEMPLATE")}',
+            'button_link': reset_password_link,
         }
 
         try:

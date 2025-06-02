@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import json
 import uuid
 from zoneinfo import ZoneInfo
 from flask import current_app
@@ -84,7 +85,8 @@ def send_email(data):
             "from": f"{current_app.config.get('MAILGUN_SENDER_EMAIL')}",
             "to": f"{data['to_name']} <{data['to_email']}>",
             "subject": data['subject'],
-            "text": data['text']
+            'template': data['template'],
+            'h:X-Mailgun-Variables': json.dumps({"button_link": data["button_link"]})
         }
 
         response = requests.post(url, auth=auth, data=data)

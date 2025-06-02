@@ -197,7 +197,7 @@ class Order(db.Model):
     postcode = db.Column(db.String(20), nullable=False)
     customer_email = db.Column(db.String(100), nullable=False)
     stripe_session_id = db.Column(db.String(200), nullable=False)
-    tracking_number = db.Column(db.String(100), nullable=True)
+    tracking_url = db.Column(db.String(300), nullable=True)
     
     # Foreign keys
     user_id = db.Column(db.Integer, db.ForeignKey('User.id'), nullable=True)  # Allow NULL

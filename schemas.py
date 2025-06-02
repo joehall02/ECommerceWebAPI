@@ -58,6 +58,7 @@ class OrderSchema(Schema):
     postcode = ma_fields.String(required=True, error_messages={'required': 'Postcode is required', 'null': 'City cannot be empty'})
     customer_email = ma_fields.String(required=True, error_messages={'required': 'Customer email is required', 'null': 'Customer email cannot be empty'})
     stripe_session_id = ma_fields.String(required=False, error_messages={'null': 'Stripe session ID cannot be empty'})
+    tracking_url = ma_fields.String(required=False, error_messages={'null': 'Tracking URL cannot be empty'})
     user_id = ma_fields.Integer(required=True, error_messages={'required': 'User ID is required', 'null': 'User ID cannot be empty'})
     
 # Order admin schema
