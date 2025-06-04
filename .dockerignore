@@ -1,0 +1,27 @@
+# Ignore github files
+.github/
+.gitignore
+.git/
+README.md
+
+# Ignore docs folder
+docs/
+
+# Ignore venv
+venv/
+
+# Ignore tests
+tests/
+.pytest_cache/
+
+# Ignore pycache
+__pycache__/
+
+# Ignore vscode settings
+.vscode/
+
+# Ignore google service account key
+service-account-file.json
+
+# Other
+.DS_Store
