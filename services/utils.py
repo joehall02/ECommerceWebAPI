@@ -254,8 +254,8 @@ def create_stripe_checkout_session(user, valid_data, line_items):
             payment_method_types=['card'],
             line_items=line_items,
             mode='payment',
-            success_url=f'{current_app.config.get('FRONTEND_PUBLIC_URL')}/checkout/success?session_id={{CHECKOUT_SESSION_ID}}', # Redirect to success page with session id
-            cancel_url=f'{current_app.config.get('FRONTEND_PUBLIC_URL')}/checkout/cancel',
+            success_url=f"{current_app.config.get('FRONTEND_PUBLIC_URL')}/checkout/success?session_id={{CHECKOUT_SESSION_ID}}", # Redirect to success page with session id
+            cancel_url=f"{current_app.config.get('FRONTEND_PUBLIC_URL')}/checkout/cancel",
             customer_email=user.email if not user.stripe_customer_id else None, # Attach the email to the session if the user doesn't have a stripe customer id
             customer=user.stripe_customer_id if user.stripe_customer_id else None, # Attach the customer to the session if one exists
             customer_creation='always' if not user.stripe_customer_id else None, # Create a new customer if one doesn't exist

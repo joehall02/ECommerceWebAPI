@@ -349,7 +349,7 @@ class OrderService:
                 'to_name': order.full_name,
                 'to_email': order.customer_email,
                 'subject': 'Order Shipped',
-                'template': f'{current_app.config.get('MAILGUN_ORDER_SHIPPED_TEMPLATE')}',
+                'template': f"{current_app.config.get('MAILGUN_ORDER_SHIPPED_TEMPLATE')}",
                 'button_link': valid_data.get('tracking_url')
             }
             send_email(email_data)
