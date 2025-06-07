@@ -1,11 +1,8 @@
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from models import Cart, CartProduct, Product
-from main import create_app
-from celery_worker import celery
+from celery_worker import celery, flask_app, redis_client
 import os
-from config import Development, Production
-import redis
 from exts import cache
 from services.product_service import FeaturedProductService, ProductService
 
@@ -13,37 +10,21 @@ from services.product_service import FeaturedProductService, ProductService
 LOCK_EXPIRATION = 60 * 30  # 30 minutes
 
 # Determine the environment
-flask_env = os.getenv('FLASK_ENV', 'development')
 cart_unlock_time_hours = int(os.getenv('CART_UNLOCK_TIME_HOURS', 24)) # Default to 24 hours
 reserved_stock_cleanup_hours = int(os.getenv('RESERVED_STOCK_CLEANUP_HOURS', 1)) # Default to 1 hour
 
-# Set the configuration based on the environment
-if flask_env == 'development':
-    config = Development
-elif flask_env == 'production':
-    config = Production
-else:
-    raise ValueError(f"Invalid FLASK_ENV value: {flask_env}. Expected 'development' or 'production'.")
-
-# Set redis client
-redis_client = redis.StrictRedis.from_url(config.CACHE_REDIS_URL)
-
-
 @celery.task(name="tasks.cart_cleanup.cleanup_abandoned_carts")
 def cleanup_abandoned_carts():
-    # Initialise app
-    app = create_app(config)
-    
-    lock_key = "lock:product_reserved_stock"
-    # cache_needs_clearing = False
+    with flask_app.app_context():
+        lock_key = "lock:product_reserved_stock"
+        # cache_needs_clearing = False
 
-    # Try to acquire the lock
-    if not redis_client.set(lock_key, "1", nx=True, ex=LOCK_EXPIRATION):
-        print("cleanup_abandoned_carts task is already running.")
-        return
+        # Try to acquire the lock
+        if not redis_client.set(lock_key, "1", nx=True, ex=LOCK_EXPIRATION):
+            print("cleanup_abandoned_carts task is already running.")
+            return
 
-    try:
-        with app.app_context():
+        try:            
             now = datetime.now(tz=ZoneInfo("UTC"))
             carts = Cart.query.all()
 
@@ -75,7 +56,7 @@ def cleanup_abandoned_carts():
         #     cache.delete_memoized(ProductService.get_all_products)
         #     cache.delete_memoized(FeaturedProductService.get_all_featured_products)
 
-    finally:
-        # Release the lock
-        redis_client.delete(lock_key)
-        print("Lock released for cleanup_abandoned_carts task.")
+        finally:
+            # Release the lock
+            redis_client.delete(lock_key)
+            print("Lock released for cleanup_abandoned_carts task.")

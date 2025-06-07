@@ -1,6 +1,7 @@
 import os
 from datetime import timedelta
 from dotenv import load_dotenv
+from sqlalchemy import NullPool
 
 load_dotenv() # Load environment variables from the .env file
 
@@ -38,6 +39,14 @@ class Development(Config):
     CACHE_REDIS_URL = os.getenv('DEVELOPMENT_REDIS_URL') # Get the Redis URL from the environment variables
     CELERY_BROKER_URL = os.getenv('DEVELOPMENT_REDIS_URL') # Get the Celery broker URL from the environment variables
     CELERY_RESULT_BACKEND = os.getenv('DEVELOPMENT_REDIS_URL') # Get the Celery result backend URL from the environment variables
+    
+    # SQLAlchemy engine options for database pooling
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_size': int(os.getenv('DB_POOL_SIZE', 5)), # Set the pool size for the database connection
+        'max_overflow': int(os.getenv('DB_MAX_OVERFLOW', 5)), # Set the maximum overflow for the database connection
+        'pool_timeout': int(os.getenv('DB_POOL_TIMEOUT', 30)), # Set the pool timeout for the database connection
+        'pool_recycle': int(os.getenv('DB_POOL_RECYCLE', 1800)), # Set the pool recycle time for the database connection
+    }
 
 # Production configuration class
 class Production(Config):    
@@ -48,6 +57,11 @@ class Production(Config):
     CELERY_BROKER_URL = os.getenv('PRODUCTION_REDIS_URL') # Get the Celery broker URL from the environment variables
     CELERY_RESULT_BACKEND = os.getenv('PRODUCTION_REDIS_URL') # Get the Celery result backend URL from the environment variables
     FRONTEND_SECRET_HEADER = os.getenv('FRONTEND_SECRET_HEADER') # Get the frontend secret header from the environment variables
+
+    # SQLAlchemy engine options for database pooling
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'poolclass': NullPool, # Use NullPool to disable connection pooling in favour of pgbouncer connection pooling        
+    }
 
 # Test configuration class
 class Test(Config):

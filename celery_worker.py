@@ -3,6 +3,8 @@ import os
 from celery import Celery
 from config import Development, Production
 from celery.schedules import crontab
+from main import create_app
+import redis
 
 # Determine is ssl certification is required based on the environment
 # ssl certification required for celery when using upstash
@@ -17,6 +19,13 @@ elif flask_env == 'production':
 else:
     raise ValueError(f"Invalid FLASK_ENV value: {flask_env}. Expected 'development' or 'production'.")
 
+# Create a flask app context
+flask_app = create_app(config)
+
+# Set redis client
+redis_client = redis.StrictRedis.from_url(config.CACHE_REDIS_URL)
+
+# Create a Celery instance
 celery = Celery(
     __name__,
     broker=config.CELERY_BROKER_URL,
