@@ -24,6 +24,7 @@ This is the backend RESTful API for an e-commerce platform built using **Flask**
 - **Google Cloud Storage** — Product image storage
 - **Stripe API** — Payments integration
 - **Mailgun** — Email notifications
+- **Docker** — Containerisation via `Dockerfile`
 
 ---
 
@@ -64,6 +65,7 @@ This is the backend RESTful API for an e-commerce platform built using **Flask**
 
 - **Testing**
   - Full API test coverage using `pytest`
+  - Github CI/CD pipeline to automate unit tests and deployment
 
 - **Other**
   - Contact form for user-to-admin communication
@@ -73,7 +75,15 @@ This is the backend RESTful API for an e-commerce platform built using **Flask**
 
 ## 4. 🛠️ Deployment
 
-### 4.1. 🔐 Environment Variables
+### 4.1. 💾 Clone the Repo
+```bash
+git clone https://github.com/joehall02/ECommerceWebAPI.git
+cd ECommerceWebAPI
+```
+
+##
+
+### 4.2. 🔐 Environment Variables
 
 Create a `.env` file in the project root with the required keys.  
 See [`docs/env.example`](docs/env.example) for a template.
@@ -83,71 +93,59 @@ This is required for uploading and modifying files in your Google Cloud Storage 
 
 ##
 
-### 4.2. 🖥️ CLI Setup
+### 4.3. 🖥️ CLI Setup
 
-#### 4.2.1. Clone the repo
-```bash
-git clone https://github.com/joehall02/ECommerceWebAPI.git
-cd ECommerceWebAPI
-```
-
-#### 4.2.2. Set up virtual environment
+#### 4.3.1. Set up virtual environment
 ```bash
 python -m venv venv
 source venv/bin/activate
 ```
 
-#### 4.2.3. Install dependencies
+#### 4.3.2. Install dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-#### 4.2.4. Run database migrations
+#### 4.3.3. Run database migrations
 ```bash
 flask db upgrade
 ```
 
-#### 4.2.5. Start the application
+#### 4.3.4. Start the application
 
-##### 4.2.5.1. Run the API
+##### 4.3.4.1. Run the API
 ```bash
 python run.py
 ```
 
-##### 4.2.5.2. Run Celery worker
+##### 4.3.4.2. Run Celery worker
 ```bash
 celery -A celery_worker.celery worker --loglevel=info --concurrency=1
 ```
 
-##### 4.2.5.3. Run Celery beat
+##### 4.3.4.3. Run Celery beat
 ```bash
 celery -A celery_worker.celery beat --scheduler redbeat.RedBeatScheduler
 ```
 
 ##
 
-### 4.3. 🐳 Docker Setup
+### 4.4. 🐳 Docker Setup
 
 You can run the application as a standalone docker container using the provided `Dockerfile`.
 
-#### 4.3.1. Clone the repo
-```bash
-git clone https://github.com/joehall02/ECommerceWebAPI.git
-cd ECommerceWebAPI
-```
-
-#### 4.3.2. Build the Docker image 
+#### 4.4.1. Build the Docker image 
 ```bash
 docker build -t image-name .
 ```
 
-#### 4.3.3. Run the container
+#### 4.4.2. Run the container
 ```bash
 docker run \
---name ecommerce-api \
+--name container-name \
 --env-file .env \
 -e SERVICE_ROLE=backend \
--p host-port:container-port ecommerce-webapi
+-p host-port:container-port image-name
 ```
 ##### 📌 Tip: Change `SERVICE_ROLE` depending on the required role (backend, celery or beat)
 
