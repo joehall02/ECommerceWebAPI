@@ -163,7 +163,13 @@ python run_tests.py
 
 ---
 
-## 6. 📄 Licence
+## 6. 🔗 Related Projects
+
+- [ECommerceFrontend](https://github.com/joehall02/ECommerceFrontend)
+
+---
+
+## 7. 📄 Licence
 
 This project is licensed under the [MIT Licence](LICENCE).
 
